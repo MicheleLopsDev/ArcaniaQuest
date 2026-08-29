@@ -55,28 +55,37 @@ class EsplorazioneTest {
     fun `si parte da zero e si arriva a cento`() {
         val e = Esplorazione(4)
         assertEquals(0, e.percento)
-        e.visita("S21", 0, 0)
-        e.visita("S21", 1, 0)
+        e.calpesta(Cella(0, 0))
+        e.calpesta(Cella(1, 0))
         assertEquals(50, e.percento)
-        e.visita("S21", 0, 1)
-        e.visita("S21", 1, 1)
+        e.calpesta(Cella(0, 1))
+        e.calpesta(Cella(1, 1))
         assertEquals(100, e.percento)
     }
 
     @Test
     fun `ripassare sulla stessa casella non conta due volte`() {
         val e = Esplorazione(10)
-        assertTrue(e.visita("S21", 2, 2))
-        repeat(5) { assertTrue(!e.visita("S21", 2, 2)) }
+        assertTrue(e.calpesta(Cella(2, 2)))
+        repeat(5) { assertTrue(!e.calpesta(Cella(2, 2))) }
         assertEquals(1, e.quante)
     }
 
     @Test
-    fun `caselle uguali in moduli diversi sono caselle diverse`() {
-        val e = Esplorazione(4)
-        e.visita("S21", 0, 0)
-        e.visita("C12", 0, 0)
-        assertEquals(2, e.quante)
+    fun `una casella intravista sta sulla mappa ma non conta come esplorata`() {
+        val e = Esplorazione(10)
+        e.vedi(Cella(5, 5))
+        assertTrue(e.conosciuta(Cella(5, 5)), "va sulla mappa")
+        assertTrue(!e.calpestata(Cella(5, 5)), "ma non e' stata calpestata")
+        assertEquals(0, e.percento)
+        assertEquals(1, e.quanteViste)
+    }
+
+    @Test
+    fun `calpestare vuol dire anche vedere`() {
+        val e = Esplorazione(10)
+        e.calpesta(Cella(1, 1))
+        assertTrue(e.conosciuta(Cella(1, 1)))
     }
 
     @Test
@@ -90,7 +99,7 @@ class EsplorazioneTest {
         )
         e.aggiungiModulo(m)
         assertEquals(2, e.inTutto)
-        e.visita("T", 0, 0)
+        e.calpesta(Cella(0, 0))
         assertEquals(50, e.percento)
     }
 }

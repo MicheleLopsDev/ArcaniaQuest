@@ -10,6 +10,16 @@ object Misure {
     const val SPESSORE_MURO = 0.75f
     const val ALTEZZA_OCCHI = 1.65f
 
+    /**
+     * Campo visivo verticale, in gradi.
+     *
+     * Sessantaquattro erano troppi: su un riquadro largo diventano quasi
+     * novantacinque gradi in orizzontale, e ai bordi si guardava di sbieco
+     * dentro i muri. Cinquantadue tengono la stanza leggibile senza che
+     * gli angoli si sfaldino.
+     */
+    const val CAMPO_VISIVO = 52f
+
     /** Quanto dura un passo e quanto una svolta, in secondi. */
     const val DURATA_PASSO = 0.22f
     const val DURATA_VOLTA = 0.20f

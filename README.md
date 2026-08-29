@@ -142,7 +142,13 @@ fotografarlo invece di aprirlo:
 ./gradlew :desktop:run --args="S25 --scatto=vista.png"
 ./gradlew :desktop:run --args="S25 --alto --scatto=pianta.png"
 ./gradlew :desktop:run --args="S25 --posa=1,2,ovest --scatto=porta.png"
+./gradlew :desktop:run --args="--finestra=460x900"
 ```
+
+`--finestra=460x900` prova la disposizione da telefono senza tirare
+fuori il telefono. `--mappa`, `--tuttoscoperto` e `--porteaperte` sono
+scorciatoie per fotografare stati che a piedi ci vorrebbe un quarto
+d'ora a raggiungere.
 
 `--alto` guarda il modulo a picco, senza buio: e' il modo per vedere se
 alla mesh manca un pezzo, cosa che da dentro non si nota mai. `--posa`
@@ -158,8 +164,41 @@ controllare la resa senza doverla guardare: se una modifica rompe la
 geometria, si vede in un'immagine invece che in una sessione di gioco.
 
 Comandi: `↑ ↓` avanti e indietro, `← →` volta di 90°, `A D` passo
-laterale, `SPAZIO` apre la porta davanti, `R` monta un sotterraneo
-nuovo, `F1` nasconde il pannello.
+laterale, `SPAZIO` apre la porta davanti, `M` la mappa a tutto schermo,
+`R` monta un sotterraneo nuovo, `F1` nasconde l'interfaccia.
+
+### L'interfaccia
+
+La disposizione viene dal bozzetto di Michele: la vista in prima persona
+grande in alto a sinistra, zaino e mappa in colonna a destra, e sotto la
+vista la striscia con gruppo, diario e comandi. In verticale — sul
+telefono — i pannelli si reimpilano da soli: vista sopra, comandi
+grandi sotto.
+
+**Gruppo, zaino e diario sono finti**, e stanno tutti in
+`gioco/…/Finti.kt`: quando arrivera' la roba vera si cancella quel file
+e il compilatore dice subito chi lo usava. Portano l'etichetta «finto»
+nella loro cornice, cosi' non si scambiano per fatti.
+
+**La mappa si scopre camminando.** Non solo le caselle calpestate: anche
+quelle che il gruppo *vede*, cioe' quelle a fianco e il corridoio davanti
+finche' qualcosa non lo ferma — se no una sala grande resterebbe nera
+fino all'ultimo angolo. Le due cose restano distinte: le calpestate
+fanno la percentuale di esplorato, le viste fanno il disegno. Stanze e
+corridoi hanno tinte diverse anche sulla mappa, perche' nel gioco valgono
+regole diverse. `M` la apre a tutto schermo.
+
+Due cose del bozzetto le ho cambiate apposta:
+
+- **I comandi sono relativi, non assoluti.** Il bozzetto aveva quattro
+  tasti bussola (N/E/S/O) — e con le frecce scambiate, `[E]` a sinistra
+  e `[W]` a destra. Ma in un gioco che gira di 90 gradi alla volta il
+  giocatore pensa «avanti, gira, passo di lato», non «vai a est». La
+  crociera e' a sei tasti relativi, e la bussola resta come **spia**
+  sopra i tasti: dice dove si guarda, non e' un comando.
+- **La stanza, la casella e il seme stanno nella barra della vista**,
+  che e' quella che si guarda sempre. Il seme li' e' quello che permette
+  di raccontare un guaio invece di inseguirlo.
 
 ### Il seme
 
@@ -252,8 +291,9 @@ Da fare, nell'ordine:
    `doc/mock/tavola-moduli.html`.
 2. **Il generatore** in `:regole`: pesca, ruota, incastra, rifiuta. La
    rotazione c'e' gia' ed e' provata; manca il piazzamento.
-3. **L'interfaccia**, che arriva da Michele.
-4. Il gruppo vero, la scheda dei personaggi, gli incontri.
+3. **Il gruppo vero**: personaggi, scheda, zaino che contiene qualcosa.
+   La cornice c'e' gia' e aspetta solo i dati.
+4. Gli incontri, i mostri, i tiri di dado nel diario.
 5. Le regole di famiglia che per ora sono solo dato: mostri vaganti nei
    corridoi, incontri fissi e tesoro nelle stanze, gruppo in fila.
 

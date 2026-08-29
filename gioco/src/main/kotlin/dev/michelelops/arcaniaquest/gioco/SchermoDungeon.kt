@@ -20,6 +20,8 @@ import dev.michelelops.arcaniaquest.regole.Dungeon
 import dev.michelelops.arcaniaquest.regole.Esplorazione
 import dev.michelelops.arcaniaquest.regole.Generatore
 import dev.michelelops.arcaniaquest.regole.Lato
+import dev.michelelops.arcaniaquest.regole.Cella
+import dev.michelelops.arcaniaquest.regole.Ostacolo
 import dev.michelelops.arcaniaquest.regole.Piazzato
 import dev.michelelops.arcaniaquest.regole.Sorte
 import kotlin.math.cos
@@ -42,7 +44,11 @@ data class Avvio(
     /** Casella e verso da cui guardare, per rifare due volte lo stesso scatto. */
     val posa: Triple<Int, Int, Lato>? = null,
     /** Apre tutte le porte all'avvio: serve a fotografare il prima e il dopo. */
-    val porteSpalancate: Boolean = false
+    val porteSpalancate: Boolean = false,
+    /** Parte con la mappa grande gia' aperta. */
+    val mappaAperta: Boolean = false,
+    /** Segna come gia' visto tutto il sotterraneo: serve solo a fotografarlo. */
+    val tuttoScoperto: Boolean = false
 )
 
 /**
@@ -62,6 +68,9 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
     private lateinit var camera: PerspectiveCamera
     private lateinit var batch: ModelBatch
     private var cruscotto: Cruscotto? = null
+    private var telaio = Telaio(1f, 1f)
+    private var mappaGrande = false
+    private var messaggio = ""
 
     /** Un modello e la sua istanza per ogni pezzo, cosi' si rifa' solo quello che cambia. */
     private val modelli = LinkedHashMap<String, Model>()
@@ -76,12 +85,13 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
         catalogo = Catalogo.daJson(Gdx.files.internal("moduli/catalogo.json").readString("UTF-8"))
         generatore = Generatore(catalogo)
 
-        camera = PerspectiveCamera(64f, Gdx.graphics.width.toFloat(), Gdx.graphics.height.toFloat()).apply {
+        camera = PerspectiveCamera(Misure.CAMPO_VISIVO, Gdx.graphics.width.toFloat(), Gdx.graphics.height.toFloat()).apply {
             near = 0.15f
             far = if (avvio.dallAlto) 1200f else Misure.FONDO_BUIO
         }
         batch = ModelBatch()
         if (!avvio.dallAlto) cruscotto = Cruscotto()
+        mappaGrande = avvio.mappaAperta
 
         nuovaPartita(avvio.sorte)
     }
@@ -100,9 +110,12 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
         gruppo = avvio.posa?.let { Gruppo(dungeon, it.first, it.second, it.third) }
             ?: Gruppo.dallaPartenza(dungeon)
 
-        esplorazione = Esplorazione(dungeon.caselleInTutto).apply {
-            visita(pezzoCorrente()?.chiave ?: "", gruppo.x, gruppo.z)
+        esplorazione = Esplorazione(dungeon.caselleInTutto)
+        if (avvio.tuttoScoperto) {
+            for (pezzo in dungeon.pezzi) for (c in pezzo.celleMondo()) esplorazione.vedi(c)
         }
+        guardatiAttorno()
+        messaggio = ""
 
         if (avvio.dallAlto) Gdx.app.log("arcania", "\n" + dungeon.disegno())
 
@@ -161,16 +174,54 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
     private fun pezzoCorrente(): Piazzato? = dungeon.pezzoIn(gruppo.x, gruppo.z)
 
     override fun resize(width: Int, height: Int) {
-        camera.viewportWidth = width.toFloat()
-        camera.viewportHeight = height.toFloat()
-        camera.update()
+        telaio = Telaio(width.toFloat(), height.toFloat())
+    }
+
+    /**
+     * Quello che il gruppo vede da dove sta: la sua casella, quelle a
+     * fianco, e il corridoio davanti finche' qualcosa non lo ferma. E'
+     * questo che scopre la mappa, non il solo camminarci sopra: se no una
+     * sala grande resterebbe nera fino all'ultimo angolo.
+     */
+    private fun guardatiAttorno() {
+        val qui = Cella(gruppo.x, gruppo.z)
+        esplorazione.calpesta(qui)
+        for (l in Lato.entries) {
+            val n = Cella(qui.x + l.dx, qui.z + l.dz)
+            if (dungeon.calpestabile(n.x, n.z)) esplorazione.vedi(n)
+        }
+        var c = qui
+        repeat(14) {
+            if (dungeon.ostacolo(c.x, c.z, gruppo.verso) != Ostacolo.NIENTE) return
+            c = Cella(c.x + gruppo.verso.dx, c.z + gruppo.verso.dz)
+            esplorazione.vedi(c)
+            for (l in listOf(gruppo.verso.ruotato(1), gruppo.verso.ruotato(-1))) {
+                val fianco = Cella(c.x + l.dx, c.z + l.dz)
+                if (dungeon.calpestabile(fianco.x, fianco.z)) esplorazione.vedi(fianco)
+            }
+        }
     }
 
     override fun render() {
+        val l = Gdx.graphics.width.toFloat()
+        val a = Gdx.graphics.height.toFloat()
+        if (telaio.larghezza != l || telaio.altezza != a) telaio = Telaio(l, a)
+
         if (avvio.dallAlto) inquadraDallAlto() else inquadraDalGruppo()
 
-        Gdx.gl.glClearColor(0.012f, 0.014f, 0.018f, 1f)
+        Gdx.gl.glClearColor(0.02f, 0.022f, 0.026f, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT)
+
+        // La scena non prende piu' tutto lo schermo: sta nel suo riquadro,
+        // e le cornici le stanno attorno invece che sopra.
+        val r = if (cruscotto?.visibile == true) dentroLaVista() else Riq(0f, 0f, l, a)
+        camera.viewportWidth = r.w
+        camera.viewportHeight = r.h
+        camera.update()
+
+        val sx = Gdx.graphics.backBufferWidth.toFloat() / l
+        val sy = Gdx.graphics.backBufferHeight.toFloat() / a
+        Gdx.gl.glViewport((r.x * sx).toInt(), (r.y * sy).toInt(), (r.w * sx).toInt(), (r.h * sy).toInt())
         Gdx.gl.glEnable(GL20.GL_DEPTH_TEST)
 
         batch.begin(camera)
@@ -180,13 +231,33 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
         }
         batch.end()
 
-        // Il pannello va dopo la scena e senza prova di profondita',
-        // altrimenti i muri se lo mangiano.
+        Gdx.gl.glViewport(0, 0, Gdx.graphics.backBufferWidth, Gdx.graphics.backBufferHeight)
         Gdx.gl.glDisable(GL20.GL_DEPTH_TEST)
-        cruscotto?.disegna(voci(), esplorazione.frazione, TASTI_IN_CHIARO)
+        cruscotto?.disegna(telaio, statoHud())
 
         fotogrammi++
         if (avvio.scattaDopo > 0 && fotogrammi >= avvio.scattaDopo) scatta()
+    }
+
+    /** Il buco della cornice, dove va disegnata la scena. */
+    private fun dentroLaVista(): Riq {
+        val v = telaio.vista
+        val barra = 20f + telaio.altezza * 0.012f
+        return Riq(v.x + 1f, v.y + 1f, v.w - 2f, v.h - barra - 2f)
+    }
+
+    private fun statoHud(): StatoHud {
+        val p = pezzoCorrente()
+        return StatoHud(
+            dungeon = dungeon,
+            esplorazione = esplorazione,
+            x = gruppo.x, z = gruppo.z, verso = gruppo.verso,
+            seme = sorte.semeScritto(),
+            stanza = p?.let { "${it.modulo.id} ${it.modulo.nome}" } ?: "fuori dal sotterraneo",
+            famiglia = p?.modulo?.famiglia?.name?.lowercase() ?: "-",
+            mappaGrande = mappaGrande,
+            messaggio = messaggio
+        )
     }
 
     /**
@@ -201,21 +272,6 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
         val dx = cx - camera.position.x
         val dz = cz - camera.position.z
         return dx * dx + dz * dz > (Misure.FONDO_BUIO + raggio) * (Misure.FONDO_BUIO + raggio)
-    }
-
-    private fun voci(): List<Voce> {
-        val p = pezzoCorrente()
-        return listOf(
-            Voce("CASELLA", "${gruppo.x}, ${gruppo.z}"),
-            Voce("METRI", "%.1f, %.1f".format(
-                (gruppo.x + 0.5f) * Misure.CASELLA, (gruppo.z + 0.5f) * Misure.CASELLA)),
-            Voce("VERSO", gruppo.verso.name.lowercase()),
-            Voce("STANZA", p?.let { "${it.modulo.id}  ${it.modulo.nome}" } ?: "-"),
-            Voce("FAMIGLIA", p?.modulo?.famiglia?.name?.lowercase() ?: "-"),
-            Voce("SEME", sorte.semeScritto()),
-            Voce("PEZZI", "${dungeon.pezzi.size}   porte ${dungeon.porteAperte}/${dungeon.porteInTutto} aperte"),
-            Voce("ESPLORATO", "${esplorazione.quante} / ${esplorazione.inTutto} caselle   ${esplorazione.percento}%")
-        )
     }
 
     /** A picco su tutto il sotterraneo, tutto dentro l'inquadratura. */
@@ -263,9 +319,10 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
         if (Gdx.input.isKeyJustPressed(Input.Keys.F1)) {
             cruscotto?.let { it.visibile = !it.visibile }
         }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.M)) mappaGrande = !mappaGrande
         if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
             nuovaPartita(Sorte.nuova())
-            Gdx.app.log("arcania", "sotterraneo nuovo, seme ${sorte.semeScritto()}")
+            messaggio = "Sotterraneo nuovo: seme ${sorte.semeScritto()}."
             return
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) apri()
@@ -282,17 +339,18 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
         } ?: return
 
         if (gruppo.esegui(mossa)) {
-            esplorazione.visita(pezzoCorrente()?.chiave ?: "", gruppo.x, gruppo.z)
+            guardatiAttorno()
             ultimoRifiuto = Rifiuto.NIENTE
+            messaggio = ""
             return
         }
         if (gruppo.rifiuto != ultimoRifiuto) {
             ultimoRifiuto = gruppo.rifiuto
-            when (gruppo.rifiuto) {
-                Rifiuto.PORTA_CHIUSA -> Gdx.app.log("arcania", "La porta e' chiusa. SPAZIO per aprirla.")
-                Rifiuto.MURO -> Gdx.app.log("arcania", "Di la' c'e' un altro pezzo, ma non ci si passa.")
-                Rifiuto.ROCCIA -> Gdx.app.log("arcania", "Pietra viva.")
-                else -> {}
+            messaggio = when (gruppo.rifiuto) {
+                Rifiuto.PORTA_CHIUSA -> "La porta e' chiusa. SPAZIO per aprirla."
+                Rifiuto.MURO -> "Di la' c'e' un altro pezzo, ma non ci si passa."
+                Rifiuto.ROCCIA -> "Pietra viva."
+                else -> ""
             }
         }
     }
@@ -307,7 +365,8 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
         porta.proprietario?.let { (chiave, _) ->
             dungeon.pezzi.firstOrNull { it.chiave == chiave }?.let { rifaiPezzo(it) }
         }
-        Gdx.app.log("arcania", "La porta si apre.")
+        guardatiAttorno()
+        messaggio = "La porta si apre."
     }
 
     private fun scatta() {
@@ -329,16 +388,5 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
         batch.dispose()
         for (m in modelli.values) m.dispose()
         cruscotto?.dispose()
-    }
-
-    companion object {
-        private val TASTI_IN_CHIARO = listOf(
-            "SU / GIU  avanti e indietro",
-            "SX / DX  volta di 90 gradi",
-            "A D  passo laterale",
-            "SPAZIO  apri",
-            "R  sotterraneo nuovo",
-            "F1  nasconde il pannello"
-        )
     }
 }

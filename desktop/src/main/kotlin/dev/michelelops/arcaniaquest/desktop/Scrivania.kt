@@ -41,12 +41,18 @@ fun main(args: Array<String>) {
         fileScatto = scatto ?: "scatto.png",
         dallAlto = args.any { it == "--alto" },
         posa = posa,
-        porteSpalancate = args.any { it == "--porteaperte" }
+        porteSpalancate = args.any { it == "--porteaperte" },
+        mappaAperta = args.any { it == "--mappa" },
+        tuttoScoperto = args.any { it == "--tuttoscoperto" }
     )
 
     val config = Lwjgl3ApplicationConfiguration().apply {
         setTitle("ArcaniaQuest — seme ${sorte.semeScritto()}")
-        setWindowedMode(1280, 800)
+        // --finestra=480x900 serve a provare la disposizione da telefono
+        // senza tirare fuori il telefono
+        val misura = opzione("finestra")?.split("x")?.mapNotNull { it.trim().toIntOrNull() }
+        if (misura != null && misura.size == 2) setWindowedMode(misura[0], misura[1])
+        else setWindowedMode(1280, 800)
         setForegroundFPS(60)
         useVsync(true)
         setBackBufferConfig(8, 8, 8, 8, 16, 0, 0)
