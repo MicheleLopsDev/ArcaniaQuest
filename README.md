@@ -90,9 +90,30 @@ strumenti/  Script per il catalogo: validatore e tavola di correzione.
             Non e' ancora un modulo Gradle.
 ```
 
-Il progetto si apre in **Android Studio** come un normale progetto
-Gradle: sincronizza, e trovi i quattro moduli nel pannello. Le prove di
-`:regole` si lanciano dall'IDE come qualunque test JUnit.
+### In Android Studio
+
+Il progetto si apre come un normale progetto Gradle: sincronizza e sei a
+posto. Due cose da sapere, perche' Android Studio si comporta diversamente
+da IntelliJ su un progetto misto come questo.
+
+**Metti la vista su «Project».** In alto a sinistra, nel menu a tendina
+sopra l'albero dei file, la vista predefinita e' «Android»: quella nasconde
+i moduli che non sono Android, quindi `:regole`, `:gioco` e `:desktop`
+sembrano non esserci. Con «Project» si vedono tutti e quattro.
+
+**Le configurazioni di avvio sono gia' nel repo**, in `.run/`. Android
+Studio non ne genera da solo per un modulo JVM in un progetto Android: le
+trovi belle e pronte nel menu a tendina in alto, accanto al tasto Play.
+
+| Configurazione | Cosa fa |
+|---|---|
+| `Desktop` | Apre il gioco sul modulo S25 |
+| `Desktop - altro modulo` | Lo stesso, ma sul C45 — cambia `--args` per provarne altri |
+| `Prove regole` | I test di `:regole`, senza aprire niente |
+| `APK debug` | Costruisce l'apk |
+
+Se dopo un sync non le vedi, chiudi e riapri il progetto: Android Studio
+rilegge `.run/` all'apertura.
 
 ### Come si prova
 
@@ -109,6 +130,10 @@ fotografarlo invece di aprirlo:
 ./gradlew :desktop:run --args="C45"
 ./gradlew :desktop:run --args="S25 --scatto=vista.png"
 ```
+
+Lo scatto sta solo qui e non fra le configurazioni di Android Studio: le
+virgolette attorno a due argomenti separati da uno spazio non
+sopravvivono al passaggio dall'IDE a Gradle.
 
 Lo scatto disegna dodici fotogrammi, salva un PNG e chiude. Serve a
 controllare la resa senza doverla guardare: se una modifica rompe la

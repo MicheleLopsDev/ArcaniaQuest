@@ -22,6 +22,8 @@ captures/
 .cxx/
 
 # --- editor ---
+# .idea/ e' personale; .run/ invece si versiona: sono le configurazioni
+# di avvio che Android Studio non genera da solo per i moduli non-Android.
 .idea/
 *.iml
 .vscode/
