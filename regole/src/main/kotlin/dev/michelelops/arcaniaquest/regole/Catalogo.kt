@@ -50,10 +50,13 @@ data class Catalogo(
      */
     fun d66(primo: Int, secondo: Int): Modulo {
         require(primo in 1..6 && secondo in 1..6) { "d66 fuori scala: $primo$secondo" }
-        val valore = primo * 10 + secondo
-        return pescabili.firstOrNull { it.pesca.valore == valore }
-            ?: error("Nessun modulo per d66 = $valore")
+        return d66(primo * 10 + secondo)
     }
+
+    /** Il modulo di un tiro gia' fatto, nella forma 11..66. */
+    fun d66(tiro: Int): Modulo =
+        pescabili.firstOrNull { it.pesca.valore == tiro }
+            ?: error("Nessun modulo per d66 = $tiro")
 
     companion object {
         private val json = Json {

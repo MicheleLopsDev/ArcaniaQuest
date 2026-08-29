@@ -19,6 +19,6 @@ class LanciatoreAndroid : AndroidApplication() {
             useCompass = false
             numSamples = 2
         }
-        initialize(SchermoDungeon(), config)
+        initialize(SchermoDungeon(dev.michelelops.arcaniaquest.gioco.Avvio()), config)
     }
 }

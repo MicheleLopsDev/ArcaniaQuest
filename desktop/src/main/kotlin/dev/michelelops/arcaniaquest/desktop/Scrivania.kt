@@ -2,40 +2,52 @@ package dev.michelelops.arcaniaquest.desktop
 
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration
+import dev.michelelops.arcaniaquest.gioco.Avvio
 import dev.michelelops.arcaniaquest.gioco.SchermoDungeon
 import dev.michelelops.arcaniaquest.regole.Lato
+import dev.michelelops.arcaniaquest.regole.Sorte
 
 /**
  * Il lanciatore per Windows e Linux. Lo stesso backend copre entrambi:
  * non c'e' un ramo di codice per sistema operativo.
+ *
+ *   :desktop:run --args="S25"
+ *   :desktop:run --args="--seme=K7X2M"
+ *   :desktop:run --args="S25 --posa=1,2,ovest --scatto=porta.png"
+ *   :desktop:run --args="S25 --alto --scatto=pianta.png"
  */
 fun main(args: Array<String>) {
-    val liberi = args.filterNot { it.startsWith("--") }
-    val modulo = liberi.firstOrNull() ?: "S25"
-    // --scatto=percorso.png disegna qualche fotogramma, salva e chiude:
-    // serve a controllare la resa senza stare li' a guardare.
+    val opzione = { nome: String ->
+        args.firstOrNull { it.startsWith("--$nome=") }?.substringAfter('=')
+    }
+
+    val modulo = args.firstOrNull { !it.startsWith("--") }
+    val sorte = opzione("seme")?.let { Sorte.leggi(it) } ?: Sorte.nuova()
     val scatto = args.firstOrNull { it.startsWith("--scatto") }
         ?.substringAfter("=", "scatto.png")
+    val posa = opzione("posa")?.split(",")?.let { p ->
+        Triple(
+            p[0].trim().toInt(),
+            p[1].trim().toInt(),
+            Lato.valueOf(p.getOrElse(2) { "nord" }.trim().uppercase())
+        )
+    }
+
+    val avvio = Avvio(
+        modulo = modulo,
+        sorte = sorte,
+        scattaDopo = if (scatto != null) 12 else 0,
+        fileScatto = scatto ?: "scatto.png",
+        dallAlto = args.any { it == "--alto" },
+        posa = posa
+    )
+
     val config = Lwjgl3ApplicationConfiguration().apply {
-        setTitle("ArcaniaQuest — $modulo")
+        setTitle("ArcaniaQuest — seme ${sorte.semeScritto()}")
         setWindowedMode(1280, 800)
         setForegroundFPS(60)
         useVsync(true)
         setBackBufferConfig(8, 8, 8, 8, 16, 0, 0)
     }
-    val dallAlto = args.any { it == "--alto" }
-    // --posa=x,z,verso mette il gruppo in una casella precisa: serve a
-    // rifare due volte lo stesso scatto e confrontarli.
-    val posa = args.firstOrNull { it.startsWith("--posa=") }
-        ?.removePrefix("--posa=")?.split(",")
-        ?.let { p ->
-            Triple(
-                p[0].trim().toInt(),
-                p[1].trim().toInt(),
-                Lato.valueOf(p.getOrElse(2) { "nord" }.trim().uppercase())
-            )
-        }
-    val schermo = if (scatto != null) SchermoDungeon(modulo, 12, scatto, dallAlto, posa)
-                  else SchermoDungeon(modulo, dallAlto = dallAlto, posa = posa)
-    Lwjgl3Application(schermo, config)
+    Lwjgl3Application(SchermoDungeon(avvio), config)
 }

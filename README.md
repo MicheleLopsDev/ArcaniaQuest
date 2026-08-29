@@ -128,6 +128,7 @@ fotografarlo invece di aprirlo:
 
 ```
 ./gradlew :desktop:run --args="C45"
+./gradlew :desktop:run --args="--seme=CRIPTA"
 ./gradlew :desktop:run --args="S25 --scatto=vista.png"
 ./gradlew :desktop:run --args="S25 --alto --scatto=pianta.png"
 ./gradlew :desktop:run --args="S25 --posa=1,2,ovest --scatto=porta.png"
@@ -147,7 +148,24 @@ controllare la resa senza doverla guardare: se una modifica rompe la
 geometria, si vede in un'immagine invece che in una sessione di gioco.
 
 Comandi: `↑ ↓` avanti e indietro, `← →` volta di 90°, `A D` passo
-laterale.
+laterale, `F1` nasconde il pannello.
+
+### Il seme
+
+Ogni partita nasce da un **seme**, e lo stesso seme rifa' lo stesso
+sotterraneo casella per casella. Serve a rigiocare una partita andata
+bene, a farsi raccontare da qualcuno dov'e' finito, e soprattutto a
+**riprodurre un guaio invece di inseguirlo**.
+
+Si scrive in base 36, cosi' sta in poche lettere: `K7X2M`. Vale anche
+una parola qualunque — `--seme=CRIPTA` e' un seme valido, ed e' un modo
+comodo per battezzare una partita.
+
+Il seme e' scritto nel titolo della finestra e nel pannello di servizio,
+che mostra anche la casella in cui sei, la posizione in metri, il verso,
+il modulo, la sua famiglia e quanto sotterraneo hai gia' calpestato.
+Quel pannello non e' l'interfaccia del gioco — quella arrivera'
+disegnata: e' lo strumento di chi il gioco lo sta costruendo.
 
 La regola che tiene in piedi la separazione: **`:regole` non sa che esiste
 uno schermo.** Se una decisione di gioco ha bisogno di sapere quanti
