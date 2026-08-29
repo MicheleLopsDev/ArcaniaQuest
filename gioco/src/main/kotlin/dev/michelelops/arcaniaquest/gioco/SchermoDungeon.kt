@@ -126,6 +126,10 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
 
         if (avvio.dallAlto) Gdx.app.log("arcania", "\n" + dungeon.disegno())
 
+        // il titolo segue il seme: cambiandolo dentro il gioco, prima
+        // restava quello di partenza e non tornava piu' con il pannello
+        Gdx.graphics.setTitle("ArcaniaQuest - seme ${sorte.semeScritto()}")
+
         rifaiAmbiente()
         for (m in modelli.values) m.dispose()
         modelli.clear(); istanze.clear()
@@ -145,7 +149,12 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
                 battente = porta != null && !porta.aperta && porta.proprietario == (p.chiave to i)
             )
         }
-        val modello = CostruttoreMesh.costruisci(p.modulo, aperture)
+        val modello = CostruttoreMesh.costruisci(p.modulo, aperture) { lx, lz ->
+            // di la' dal muro c'e' un altro modulo? allora li' non ci va
+            // pietra: il confine e' condiviso
+            val altro = dungeon.pezzoIn(lx + p.ox, lz + p.oz)
+            altro != null && altro.chiave != p.chiave
+        }
         modelli[p.chiave] = modello
         istanze[p.chiave] = ModelInstance(modello).apply {
             transform.setToTranslation(p.ox * Misure.CASELLA, 0f, p.oz * Misure.CASELLA)

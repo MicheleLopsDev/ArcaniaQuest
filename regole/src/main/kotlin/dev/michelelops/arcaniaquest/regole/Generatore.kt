@@ -35,12 +35,17 @@ class Generatore(private val catalogo: Catalogo) {
 
         val frontiera = ArrayDeque<Aperto>()
         frontiera += apertiDi(primo)
+        // gli attacchi scartati dal ciclo, che la cucitura riprende in mano
+        val avanzati = mutableListOf<Aperto>()
 
         var contatore = 1
         while (frontiera.isNotEmpty() && posati.size < quantiPezzi) {
             val attacco = frontiera.removeFirst()
             val vicina = Cella(attacco.cella.x + attacco.lato.dx, attacco.cella.z + attacco.lato.dz)
-            if (vicina in occupate) continue   // di la' c'e' gia' qualcosa: si tappa
+            // di la' c'e' gia' qualcosa: non ci si mette niente, ma
+            // l'attacco resta in lista perche' la cucitura potrebbe
+            // ancora unirlo a un connettore che lo guarda in faccia
+            if (vicina in occupate) { avanzati += attacco; continue }
 
             val messo = provaAPiazzare(attacco, vicina, occupate, sorte, contatore) ?: continue
             contatore++
@@ -67,6 +72,8 @@ class Generatore(private val catalogo: Catalogo) {
             frontiera += apertiDi(messo.pezzo).filter { it.indice != messo.indice }
         }
 
+        cuci(posati, frontiera.toList() + avanzati, varchi, passaggi)
+
         val partenza = iniziale.partenza
         return Dungeon(
             seme = sorte.seme,
@@ -76,6 +83,52 @@ class Generatore(private val catalogo: Catalogo) {
             passaggi = passaggi,
             varchi = varchi
         )
+    }
+
+    /**
+     * Cuce gli attacchi rimasti liberi che si guardano in faccia.
+     *
+     * Capita spesso che due pezzi finiscano affiancati per vie diverse,
+     * con un connettore per uno che da' sulla casella dell'altro. Senza
+     * questa passata resterebbero due muri schiena contro schiena, e da
+     * dentro il gioco sembra un corridoio che finisce contro una stanza
+     * senza motivo. Cucirli apre il passaggio, e in piu' crea gli anelli:
+     * un sotterraneo tutto ad albero costringe a rifare sempre la stessa
+     * strada a ritroso.
+     */
+    private fun cuci(
+        posati: List<Piazzato>,
+        liberi: List<Aperto>,
+        varchi: MutableMap<String, MutableSet<Int>>,
+        passaggi: MutableList<Porta>
+    ) {
+        val perPezzo = posati.associateBy { it.chiave }
+        // solo quelli che non sono gia' diventati un varco
+        val aperti = liberi.filter { it.indice !in (varchi[it.chiave] ?: emptySet()) }
+        val perCasella = aperti.groupBy { it.cella }
+
+        for (a in aperti) {
+            if (a.indice in (varchi[a.chiave] ?: emptySet())) continue
+            val vicina = Cella(a.cella.x + a.lato.dx, a.cella.z + a.lato.dz)
+            val dirimpetto = perCasella[vicina]?.firstOrNull {
+                it.chiave != a.chiave &&
+                    it.lato == a.lato.opposto &&
+                    it.indice !in (varchi[it.chiave] ?: emptySet())
+            } ?: continue
+
+            varchi.getOrPut(a.chiave) { mutableSetOf() } += a.indice
+            varchi.getOrPut(dirimpetto.chiave) { mutableSetOf() } += dirimpetto.indice
+
+            val kA = perPezzo.getValue(a.chiave).modulo.connettori[a.indice]
+            val kB = perPezzo.getValue(dirimpetto.chiave).modulo.connettori[dirimpetto.indice]
+            val battente = kA.porta || kB.porta
+            passaggi += Porta(
+                a = a.cella,
+                b = vicina,
+                conBattente = battente,
+                proprietario = if (battente) dirimpetto.chiave to dirimpetto.indice else null
+            )
+        }
     }
 
     private class Messo(val pezzo: Piazzato, val indice: Int)

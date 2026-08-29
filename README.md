@@ -129,9 +129,30 @@ rilegge `.run/` all'apertura.
 
 ```
 ./gradlew :regole:test          le regole, senza aprire niente
+./gradlew perlustra             cammina i sotterranei e verifica che si tengano
 ./gradlew :desktop:run          il gioco su desktop
 ./gradlew :android:assembleDebug  l'apk
 ```
+
+### La perlustrazione
+
+`perlustra` non apre niente: monta i sotterranei, li **cammina un passo
+alla volta** come farebbe il gruppo, e controlla di essere arrivato a
+ogni casella. Le porte chiuse non fermano — si contano e si passa: una
+porta e' un ritardo, non un muro. Fallisce se anche uno solo si
+interrompe, quindi puo' stare in una verifica automatica.
+
+```
+./gradlew perlustra
+./gradlew perlustra -Psemi=1-500 -Ppezzi=16
+./gradlew perlustra -Psemi=8BD -Pdiario=si
+```
+
+I semi si scrivono in base 36 come dappertutto, quindi `1-200` sono 2592
+sotterranei e non duecento. Quando uno si interrompe, il suo diario
+finisce in `build/perlustrazioni/`: c'e' ogni singolo passo, e in fondo
+le caselle mai raggiunte e la mappa a caratteri. `-Pdiario=si` scrive il
+diario anche di quelli riusciti.
 
 Su desktop `:desktop:run` accetta l'id di un modulo e un'opzione per
 fotografarlo invece di aprirlo:

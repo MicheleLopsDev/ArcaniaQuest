@@ -152,6 +152,17 @@ class Dungeon(
             }
             sb.append(RIGA)
         }
+        for (p in pezzi) {
+            val aperti = varchiDi(p.chiave).sorted()
+            sb.append(p.chiave.padEnd(8)).append(" a ").append(p.ox).append(",").append(p.oz)
+                .append("   connettori ")
+            for ((i, k) in p.modulo.connettori.withIndex()) {
+                sb.append(if (i in aperti) "aperto" else "murato")
+                    .append("(").append(k.lato.name.lowercase()).append(" ")
+                    .append(k.x).append(",").append(k.z).append(") ")
+            }
+            sb.append(RIGA)
+        }
         for (p in passaggi.filter { it.conBattente }) {
             sb.append(if (p.aperta) "aperta " else "chiusa ")
                 .append(p.a.x).append(",").append(p.a.z).append("  -  ")

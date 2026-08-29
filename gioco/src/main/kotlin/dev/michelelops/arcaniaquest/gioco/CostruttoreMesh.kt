@@ -38,21 +38,53 @@ object CostruttoreMesh {
     private val LEGNO = Color(0.40f, 0.25f, 0.15f, 1f)
     private val FERRO = Color(0.20f, 0.20f, 0.21f, 1f)
 
-    /** Un tratto di muro gia' misurato: due estremi e la normale in fuori. */
+    /**
+     * Un tratto di muro gia' misurato.
+     *
+     * [rientro] e' di quanto la faccia interna sta indietro rispetto al
+     * confine, [spessore] quanta pietra ci va sopra. Non sono sempre gli
+     * stessi, ed e' tutta la questione dei muri condivisi:
+     *
+     * - se di la' c'e' roccia, il muro parte dal confine e si estrude in
+     *   fuori per intero;
+     * - se di la' comincia un altro modulo, il muro vale per due: ognuno
+     *   ne fa mezzo, arretrando la propria faccia di mezzo spessore. Cosi'
+     *   i due mezzi muri combaciano al confine invece di infilarsi uno in
+     *   casa dell'altro, e soprattutto le due facce non finiscono sullo
+     *   stesso piano — cosa che le faceva litigare per la profondita', e a
+     *   schermo faceva sparire il muro.
+     */
     private class Tratto(
         val ax: Float, val az: Float,
         val bx: Float, val bz: Float,
-        val nx: Float, val nz: Float
+        val nx: Float, val nz: Float,
+        val rientro: Float,
+        val spessore: Float,
+        val facciaEsterna: Boolean
     )
 
     /** Il taglio in testa a un muro: chiude lo spessore dove il muro finisce. */
-    private class Stipite(val x: Float, val z: Float, val nx: Float, val nz: Float)
+    private class Stipite(
+        val x: Float, val z: Float,
+        val nx: Float, val nz: Float,
+        val rientro: Float, val spessore: Float
+    )
 
     /** Come si costruisce un modulo isolato: tutti i varchi aperti. */
     fun apertureLibere(m: Modulo): List<Apertura> =
         m.connettori.mapIndexed { i, k -> Apertura(i, k.porta, k.porta) }
 
-    fun costruisci(m: Modulo, aperture: List<Apertura> = apertureLibere(m)): Model {
+    /**
+     * @param fuoriOccupato dice se la casella (in coordinate del modulo)
+     *   appena fuori dal muro appartiene a un altro modulo. Serve a non
+     *   costruire pietra dentro casa d'altri: due moduli affiancati
+     *   condividono il confine, e ognuno ci mette solo la propria faccia.
+     */
+    fun costruisci(
+        m: Modulo,
+        aperture: List<Apertura> = apertureLibere(m),
+        fuoriOccupato: (Int, Int) -> Boolean = { _, _ -> false }
+    ): Model {
         val c = Misure.CASELLA
         val h = Misure.ALTEZZA_MURO
         val t = Misure.SPESSORE_MURO
@@ -94,7 +126,18 @@ object CostruttoreMesh {
                 val confine = forme.withIndex().any { (j, g) -> j != i && Pianta.dentro(g, mx, mz) }
                 tenuto[k] = !varco && !confine
 
-                if (tenuto[k]) tratti += Tratto(a[0] * c, a[1] * c, d[0] * c, d[1] * c, nx, nz)
+                if (tenuto[k]) {
+                    // la casella appena oltre il muro, in coordinate del modulo
+                    val fx = kotlin.math.floor(mx + nx * 0.5f).toInt()
+                    val fz = kotlin.math.floor(mz + nz * 0.5f).toInt()
+                    val condiviso = fuoriOccupato(fx, fz)
+                    tratti += Tratto(
+                        a[0] * c, a[1] * c, d[0] * c, d[1] * c, nx, nz,
+                        rientro = if (condiviso) t / 2f else 0f,
+                        spessore = if (condiviso) t / 2f else t,
+                        facciaEsterna = !condiviso
+                    )
+                }
             }
 
             // Poi si chiudono i tagli. Dove il muro finisce, il suo spessore
@@ -106,7 +149,19 @@ object CostruttoreMesh {
                 if (tenuto[k] == tenuto[succ]) continue
                 val v = poly[succ]
                 val n = if (tenuto[k]) normali[k] else normali[succ]
-                stipiti += Stipite(v[0] * c, v[1] * c, n[0], n[1])
+                // lo stipite chiude la testa del muro, con lo spessore che
+                // quel muro ha davvero li'
+                val vivo = if (tenuto[k]) k else succ
+                val a2 = poly[vivo]
+                val b2 = poly[(vivo + 1) % poly.size]
+                val fx = kotlin.math.floor((a2[0] + b2[0]) / 2f + n[0] * 0.5f).toInt()
+                val fz = kotlin.math.floor((a2[1] + b2[1]) / 2f + n[1] * 0.5f).toInt()
+                val condiviso = fuoriOccupato(fx, fz)
+                stipiti += Stipite(
+                    v[0] * c, v[1] * c, n[0], n[1],
+                    rientro = if (condiviso) t / 2f else 0f,
+                    spessore = if (condiviso) t / 2f else t
+                )
             }
         }
 
@@ -155,36 +210,43 @@ object CostruttoreMesh {
         // 3. facce dei muri
         val mur = mb.part("muri", GL20.GL_TRIANGLES, attributi, materiale(PIETRA_MURO))
         for (s in tratti) {
-            val ex = s.nx * t; val ez = s.nz * t
             val dentro = Vector3(-s.nx, 0f, -s.nz)
+            val ix = s.ax - s.nx * s.rientro; val iz = s.az - s.nz * s.rientro
+            val jx = s.bx - s.nx * s.rientro; val jz = s.bz - s.nz * s.rientro
+            // la faccia interna c'e' sempre: e' quella che si vede da qui
             quadrato(mur,
-                Vector3(s.ax, 0f, s.az), Vector3(s.bx, 0f, s.bz),
-                Vector3(s.bx, h, s.bz), Vector3(s.ax, h, s.az), dentro)
+                Vector3(ix, 0f, iz), Vector3(jx, 0f, jz),
+                Vector3(jx, h, jz), Vector3(ix, h, iz), dentro)
+            if (!s.facciaEsterna) continue
+            val ex = s.nx * s.spessore; val ez = s.nz * s.spessore
             quadrato(mur,
-                Vector3(s.bx + ex, 0f, s.bz + ez), Vector3(s.ax + ex, 0f, s.az + ez),
-                Vector3(s.ax + ex, h, s.az + ez), Vector3(s.bx + ex, h, s.bz + ez),
+                Vector3(jx + ex, 0f, jz + ez), Vector3(ix + ex, 0f, iz + ez),
+                Vector3(ix + ex, h, iz + ez), Vector3(jx + ex, h, jz + ez),
                 Vector3(s.nx, 0f, s.nz))
         }
 
         // 4. stipiti: la testa dei muri tagliati
         val sti = mb.part("stipiti", GL20.GL_TRIANGLES, attributi, materiale(PIETRA_MURO))
         for (p in stipiti) {
-            val ex = p.nx * t; val ez = p.nz * t
+            val bx = p.x - p.nx * p.rientro; val bz = p.z - p.nz * p.rientro
+            val ex = p.nx * p.spessore; val ez = p.nz * p.spessore
             // normale lungo il muro: quale dei due versi conta poco,
             // le facce non si scartano
             val lungo = Vector3(-p.nz, 0f, p.nx)
             quadrato(sti,
-                Vector3(p.x, 0f, p.z), Vector3(p.x + ex, 0f, p.z + ez),
-                Vector3(p.x + ex, h, p.z + ez), Vector3(p.x, h, p.z), lungo)
+                Vector3(bx, 0f, bz), Vector3(bx + ex, 0f, bz + ez),
+                Vector3(bx + ex, h, bz + ez), Vector3(bx, h, bz), lungo)
         }
 
         // 5. cime dei muri, per quando si guardera' dall'alto
         val cim = mb.part("cime", GL20.GL_TRIANGLES, attributi, materiale(PIETRA_CIMA))
         for (s in tratti) {
-            val ex = s.nx * t; val ez = s.nz * t
+            val ix = s.ax - s.nx * s.rientro; val iz = s.az - s.nz * s.rientro
+            val jx = s.bx - s.nx * s.rientro; val jz = s.bz - s.nz * s.rientro
+            val ex = s.nx * s.spessore; val ez = s.nz * s.spessore
             quadrato(cim,
-                Vector3(s.ax, h, s.az), Vector3(s.bx, h, s.bz),
-                Vector3(s.bx + ex, h, s.bz + ez), Vector3(s.ax + ex, h, s.az + ez), su)
+                Vector3(ix, h, iz), Vector3(jx, h, jz),
+                Vector3(jx + ex, h, jz + ez), Vector3(ix + ex, h, iz + ez), su)
         }
 
         // 6. architravi: il varco toglie il muro per tutta l'altezza, ma la

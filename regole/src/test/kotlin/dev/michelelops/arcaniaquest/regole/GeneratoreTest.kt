@@ -15,8 +15,13 @@ class GeneratoreTest {
 
     private fun dungeon(seme: Long, pezzi: Int = 12) = generatore.genera(Sorte(seme), pezzi)
 
-    /** I semi su cui si prova: pochi ma sempre gli stessi, cosi' un guaio si rivede. */
-    private val semi = listOf(1L, 7L, 42L, 1234L, 99991L, 777777L)
+    /**
+     * I semi su cui si prova. Sempre gli stessi, cosi' un guaio si
+     * rivede: qualche centinaio in fila piu' qualcuno sparso e qualcuno
+     * che ha gia' dato problemi giocando.
+     */
+    private val semi = (1L..250L).toList() +
+        listOf(10777L /* 8BD */, 13L /* D */, 99991L, 777777L, 4_000_000L)
 
     @Test
     fun `lo stesso seme rifa' lo stesso sotterraneo`() {
@@ -32,9 +37,16 @@ class GeneratoreTest {
     }
 
     @Test
-    fun `semi diversi danno sotterranei diversi`() {
+    fun `semi diversi danno quasi sempre sotterranei diversi`() {
+        // Su qualche centinaio di semi qualche doppione ci sta: i pezzi
+        // sono quarantadue e i sotterranei corti. Quello che conta e' che
+        // non collassino tutti sulla stessa manciata di forme.
         val forme = semi.map { s -> dungeon(s).pezzi.map { Triple(it.chiave, it.ox, it.oz) } }
-        assertEquals(forme.size, forme.toSet().size, "due semi hanno dato lo stesso dungeon")
+        val distinti = forme.toSet().size
+        assertTrue(
+            distinti > forme.size * 9 / 10,
+            "solo $distinti forme distinte su ${forme.size} semi"
+        )
     }
 
     @Test
@@ -132,6 +144,38 @@ class GeneratoreTest {
         }
         // se non capita mai, la prova non ha provato niente: meglio saperlo
         assertTrue(trovato, "nessun seme ha prodotto due pezzi affiancati senza passaggio")
+    }
+
+    @Test
+    fun `qualche sotterraneo ha un anello`() {
+        // Un sotterraneo tutto ad albero ha esattamente un passaggio meno
+        // dei pezzi, e costringe a rifare sempre la stessa strada a
+        // ritroso. La cucitura degli attacchi che si guardano in faccia
+        // serve proprio a questo: se non ne producesse mai uno, sarebbe
+        // codice morto.
+        val conAnello = semi.count { seme ->
+            val d = dungeon(seme)
+            d.passaggi.size > d.pezzi.size - 1
+        }
+        assertTrue(conAnello > semi.size / 20, "solo $conAnello sotterranei su ${semi.size} hanno un anello")
+    }
+
+    @Test
+    fun `si percorre tutto camminando, non solo sulla carta`() {
+        for (seme in semi) {
+            val d = dungeon(seme)
+            val giro = Perlustratore.percorri(d)
+            assertTrue(
+                giro.percorribile,
+                "seme $seme non si percorre: " + giro.riassunto()
+            )
+            // ogni passo unisce due caselle vicine: e' un cammino vero,
+            // non un salto da una parte all'altra della mappa
+            for (p in giro.passi) {
+                val dist = kotlin.math.abs(p.da.x - p.a.x) + kotlin.math.abs(p.da.z - p.a.z)
+                assertEquals(1, dist, "seme $seme: passo ${p.numero} salta")
+            }
+        }
     }
 
     /** Le caselle che si raggiungono a piedi, con le porte che si possono aprire. */
