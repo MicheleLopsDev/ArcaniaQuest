@@ -17,6 +17,20 @@ for fam in ['iniziali','corridoi','stanze']:
             dx,dz=DIR[k['lato']]; nx,nz=x+dx,z+dz
             dentro = 0<=nx<w and 0<=nz<d and cel[nz][nx]=='1'
             if dentro: err.append((i,'connettore che da su una casella interna %s'%k))
+        # tutte le caselle devono stare attaccate fra loro: due che si
+        # toccano solo d'angolo non si attraversano, e il pezzo si spacca
+        # in due meta' che non comunicano
+        celle={(x,z) for z in range(d) for x in range(w) if cel[z][x]=='1'}
+        if celle:
+            primo=min(celle); vis={primo}; coda=[primo]
+            while coda:
+                x,z=coda.pop()
+                for dx,dz in ((0,-1),(0,1),(-1,0),(1,0)):
+                    n=(x+dx,z+dz)
+                    if n in celle and n not in vis: vis.add(n); coda.append(n)
+            if len(vis)!=len(celle):
+                err.append((i,'caselle staccate dal resto: %s'%sorted(celle-vis)))
+
         if 'partenza' in m:
             x,z=m['partenza']['cella']
             if cel[z][x]!='1': err.append((i,'partenza su roccia'))

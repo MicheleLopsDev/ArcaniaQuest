@@ -11,8 +11,8 @@ import dev.michelelops.arcaniaquest.regole.Sorte
  * Il lanciatore per Windows e Linux. Lo stesso backend copre entrambi:
  * non c'e' un ramo di codice per sistema operativo.
  *
- *   :desktop:run --args="S25"
- *   :desktop:run --args="--seme=K7X2M"
+ *   :desktop:run --args="--seme=K7X2M --pezzi=16"
+ *   :desktop:run --args="S25"   (un modulo solo, per guardarlo)
  *   :desktop:run --args="S25 --posa=1,2,ovest --scatto=porta.png"
  *   :desktop:run --args="S25 --alto --scatto=pianta.png"
  */
@@ -36,10 +36,12 @@ fun main(args: Array<String>) {
     val avvio = Avvio(
         modulo = modulo,
         sorte = sorte,
+        quantiPezzi = opzione("pezzi")?.toIntOrNull() ?: 12,
         scattaDopo = if (scatto != null) 12 else 0,
         fileScatto = scatto ?: "scatto.png",
         dallAlto = args.any { it == "--alto" },
-        posa = posa
+        posa = posa,
+        porteSpalancate = args.any { it == "--porteaperte" }
     )
 
     val config = Lwjgl3ApplicationConfiguration().apply {

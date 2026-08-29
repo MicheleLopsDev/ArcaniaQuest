@@ -29,6 +29,20 @@ class Sorte(val seme: Long) {
     fun <T> uno(fra: List<T>): T = fra[dadi.nextInt(fra.size)]
 
     /**
+     * La stessa lista in ordine sparso. Il mescolamento e' scritto a mano
+     * e non delegato a `shuffled(Random)`, cosi' la sequenza dipende solo
+     * dal seme e non dalla versione della libreria.
+     */
+    fun <T> mescola(lista: List<T>): List<T> {
+        val m = lista.toMutableList()
+        for (i in m.indices.reversed()) {
+            val j = dadi.nextInt(i + 1)
+            val t = m[i]; m[i] = m[j]; m[j] = t
+        }
+        return m
+    }
+
+    /**
      * Il seme come lo si scrive e lo si detta: in base 36, cosi' sta in
      * poche lettere invece che in venti cifre.
      */

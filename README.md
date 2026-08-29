@@ -49,6 +49,16 @@ attacco libero, pesca un pezzo che abbia un attacco sul lato opposto, lo
 ruota, lo trasla, e rifiuta il piazzamento se qualcosa si sovrappone. Che
 una sala sia ovale o quadrata non lo riguarda.
 
+Prova prima i pezzi della **famiglia opposta** a quella da cui arriva:
+e' la regola che evita cinque corridoi di fila e sale attaccate l'una
+all'altra senza niente in mezzo. Gli attacchi rimasti liberi alla fine
+vengono murati, cosi' il sotterraneo non si affaccia mai sul nulla.
+
+Dove due pezzi si incastrano nasce un **passaggio**. Se almeno uno dei
+due connettori ha il battente, li' c'e' una porta: parte chiusa, si apre
+con un tasto, e **una volta aperta resta aperta** — il gruppo non torna
+sui propri passi per ritrovarsi la strada sbarrata.
+
 Il catalogo sta in [`content/moduli/catalogo.json`](content/moduli/catalogo.json),
 il formato è spiegato in [`doc/MODULI.md`](doc/MODULI.md).
 
@@ -128,7 +138,7 @@ fotografarlo invece di aprirlo:
 
 ```
 ./gradlew :desktop:run --args="C45"
-./gradlew :desktop:run --args="--seme=CRIPTA"
+./gradlew :desktop:run --args="--seme=CRIPTA --pezzi=16"
 ./gradlew :desktop:run --args="S25 --scatto=vista.png"
 ./gradlew :desktop:run --args="S25 --alto --scatto=pianta.png"
 ./gradlew :desktop:run --args="S25 --posa=1,2,ovest --scatto=porta.png"
@@ -148,7 +158,8 @@ controllare la resa senza doverla guardare: se una modifica rompe la
 geometria, si vede in un'immagine invece che in una sessione di gioco.
 
 Comandi: `↑ ↓` avanti e indietro, `← →` volta di 90°, `A D` passo
-laterale, `F1` nasconde il pannello.
+laterale, `SPAZIO` apre la porta davanti, `R` monta un sotterraneo
+nuovo, `F1` nasconde il pannello.
 
 ### Il seme
 
@@ -225,10 +236,13 @@ Fatto:
 - Il formato dei moduli è definito e validato.
 - Il catalogo e' completo come numeri: **42 moduli**, 6 iniziali e tutti
   e 36 i tiri del d66.
-- Il progetto compila e gira su desktop, e l'apk si costruisce. Un
-  modulo si carica dal JSON, diventa geometria, e ci si cammina dentro a
-  caselle.
-- `:regole` ha le sue prove: catalogo, tabelle dei dadi, rotazioni.
+- Il progetto compila e gira su desktop, e l'apk si costruisce.
+- **Il sotterraneo si genera**: i pezzi si pescano col seme, si ruotano,
+  si incastrano, e quello che resta libero viene murato. Le porte si
+  aprono e restano aperte.
+- `:regole` ha le sue prove: catalogo, dadi, rotazioni, generatore.
+  Fra queste, che lo stesso seme rifa' lo stesso sotterraneo e che da
+  ogni casella si arriva a tutte le altre.
 
 Da fare, nell'ordine:
 
@@ -238,10 +252,10 @@ Da fare, nell'ordine:
    `doc/mock/tavola-moduli.html`.
 2. **Il generatore** in `:regole`: pesca, ruota, incastra, rifiuta. La
    rotazione c'e' gia' ed e' provata; manca il piazzamento.
-3. **Piu' moduli insieme**: oggi se ne carica uno solo, e attraversare
-   una porta non porta da nessuna parte.
-4. **L'interfaccia**, che arriva da Michele.
-5. Il gruppo vero, la scheda dei personaggi, gli incontri.
+3. **L'interfaccia**, che arriva da Michele.
+4. Il gruppo vero, la scheda dei personaggi, gli incontri.
+5. Le regole di famiglia che per ora sono solo dato: mostri vaganti nei
+   corridoi, incontri fissi e tesoro nelle stanze, gruppo in fila.
 
 Quello che si vede adesso e' volumi grezzi senza texture, luce di torcia
 e nebbia. La resa e' quella decisa nei mock, ma non e' ancora vestita.

@@ -66,7 +66,7 @@
 
     { "id": "I4", "nome": "Biforcazione", "famiglia": "iniziale", "pesca": { "tabella": "d6", "valore": 4 },
       "ingombro": { "w": 5, "d": 3 },
-      "caselle": ["10001", "01010", "00100"],
+      "caselle": ["10001", "11111", "00100"],
       "partenza": { "cella": [2, 2], "verso": "nord" },
       "connettori": [
         { "lato": "nord", "cella": [0, 0], "porta": false },
@@ -75,7 +75,7 @@
 
     { "id": "I5", "nome": "Imbuto", "famiglia": "iniziale", "pesca": { "tabella": "d6", "valore": 5 },
       "ingombro": { "w": 3, "d": 5 },
-      "caselle": ["101", "010", "010", "111", "010"],
+      "caselle": ["111", "010", "010", "111", "010"],
       "partenza": { "cella": [1, 2], "verso": "nord" },
       "connettori": [
         { "lato": "nord", "cella": [0, 0], "porta": false },

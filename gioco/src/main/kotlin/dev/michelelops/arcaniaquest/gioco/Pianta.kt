@@ -125,12 +125,6 @@ object Pianta {
     const val MARGINE_CONFINE = 0.03f
 
     /**
-     * I varchi: dove il muro non c'e'. Uno per ogni connettore, a cavallo
-     * del bordo della casella.
-     */
-    fun varchi(m: Modulo): List<Riquadro> = m.connettori.map { varco(it) }
-
-    /**
      * Un passaggio aperto e' largo quanto la casella: di la' si cammina,
      * e la stanza deve proseguire. Una porta invece e' una porta — un
      * metro e mezzo, non tre. Fare i due casi uguali dava battenti larghi
@@ -139,10 +133,18 @@ object Pianta {
     const val LARGO_PASSAGGIO = 0.47f
     const val LARGO_PORTA = 0.26f
 
-    fun varco(k: Connettore): Riquadro {
+    /**
+     * Il varco: dove il muro non c'e', a cavallo del bordo della casella.
+     *
+     * Se sia stretto non lo decide il connettore da solo. Quando due pezzi
+     * si incastrano, se uno dei due ha il battente la porta c'e' per tutti
+     * e due: se ogni lato decidesse per conto suo, uno taglierebbe un buco
+     * da un metro e mezzo e l'altro da tre.
+     */
+    fun varco(k: Connettore, stretto: Boolean = k.porta): Riquadro {
         val x = k.x.toFloat(); val z = k.z.toFloat()
         val s = 0.3f      // quanto il varco sborda oltre il muro
-        val mezzo = if (k.porta) LARGO_PORTA else LARGO_PASSAGGIO
+        val mezzo = if (stretto) LARGO_PORTA else LARGO_PASSAGGIO
         val l = 0.5f - mezzo   // quanta parete resta ai lati del varco
         return when (k.lato) {
             dev.michelelops.arcaniaquest.regole.Lato.NORD ->

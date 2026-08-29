@@ -57,8 +57,17 @@ object Validatore {
                 if (c != '0' && c != '1') guai += Guaio(m.id, "carattere '$c' in ($x, $z)")
             }
         }
-        if (m.celle().isEmpty()) {
+        val celle = m.celle().toSet()
+        if (celle.isEmpty()) {
             guai += Guaio(m.id, "nessuna casella calpestabile")
+        } else {
+            // Due caselle che si toccano solo d'angolo non si attraversano:
+            // un pezzo cosi' si spacca in due meta' che non comunicano, e
+            // dentro il gioco diventa una stanza dove non si entra.
+            val staccate = celle - attaccate(m, celle.first())
+            if (staccate.isNotEmpty()) {
+                guai += Guaio(m.id, "caselle staccate dal resto: ${staccate.sortedWith(compareBy({ it.z }, { it.x }))}")
+            }
         }
 
         for (k in m.connettori) {
@@ -94,5 +103,21 @@ object Validatore {
         }
 
         return guai
+    }
+
+    /** Le caselle che si raggiungono a piedi da [da], dentro il modulo. */
+    private fun attaccate(m: Modulo, da: Cella): Set<Cella> {
+        val viste = mutableSetOf(da)
+        val coda = ArrayDeque(listOf(da))
+        while (coda.isNotEmpty()) {
+            val c = coda.removeFirst()
+            for (l in Lato.entries) {
+                val n = Cella(c.x + l.dx, c.z + l.dz)
+                if (n in viste || !m.calpestabile(n.x, n.z)) continue
+                viste += n
+                coda += n
+            }
+        }
+        return viste
     }
 }

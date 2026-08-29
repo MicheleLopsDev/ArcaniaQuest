@@ -1,13 +1,14 @@
 package dev.michelelops.arcaniaquest.gioco
 
+import dev.michelelops.arcaniaquest.regole.Dungeon
 import dev.michelelops.arcaniaquest.regole.Lato
-import dev.michelelops.arcaniaquest.regole.Modulo
+import dev.michelelops.arcaniaquest.regole.Ostacolo
 
 /** Cosa puo' fare il gruppo. Sei mosse, non una di piu'. */
 enum class Mossa { AVANTI, INDIETRO, PASSO_SINISTRO, PASSO_DESTRO, VOLTA_SINISTRA, VOLTA_DESTRA }
 
 /** Perche' una mossa non e' andata a buon fine. */
-enum class Rifiuto { NIENTE, ROCCIA, PORTA_CHIUSA, GIA_IN_MOVIMENTO }
+enum class Rifiuto { NIENTE, ROCCIA, MURO, PORTA_CHIUSA, GIA_IN_MOVIMENTO }
 
 /**
  * Il gruppo: una casella, un verso, e l'animazione che porta dall'una
@@ -18,7 +19,7 @@ enum class Rifiuto { NIENTE, ROCCIA, PORTA_CHIUSA, GIA_IN_MOVIMENTO }
  * spegnesse il gioco a meta' movimento, si riprenderebbe dalla casella
  * di arrivo senza perdere niente.
  */
-class Gruppo(private val modulo: Modulo, x: Int, z: Int, verso: Lato) {
+class Gruppo(private val dungeon: Dungeon, x: Int, z: Int, verso: Lato) {
 
     var x: Int = x; private set
     var z: Int = z; private set
@@ -57,18 +58,21 @@ class Gruppo(private val modulo: Modulo, x: Int, z: Int, verso: Lato) {
         }
     }
 
+    /** Apre quello che c'e' davanti, se c'e' qualcosa da aprire. */
+    fun apri(): Boolean {
+        if (inMovimento) return false
+        return dungeon.apri(x, z, verso) != null
+    }
+
     private fun passo(dove: Lato): Boolean {
-        val nx = x + dove.dx
-        val nz = z + dove.dz
-        if (!modulo.calpestabile(nx, nz)) {
-            // se di la' c'e' un connettore, non e' roccia: e' un'uscita
-            // che per ora non porta da nessuna parte
-            val k = modulo.connettoreIn(x, z, dove)
-            rifiuto = if (k != null) Rifiuto.PORTA_CHIUSA else Rifiuto.ROCCIA
-            return false
+        when (dungeon.ostacolo(x, z, dove)) {
+            Ostacolo.NIENTE -> {}
+            Ostacolo.PORTA_CHIUSA -> { rifiuto = Rifiuto.PORTA_CHIUSA; return false }
+            Ostacolo.MURO -> { rifiuto = Rifiuto.MURO; return false }
+            Ostacolo.ROCCIA -> { rifiuto = Rifiuto.ROCCIA; return false }
         }
         daX = x.toFloat(); daZ = z.toFloat()
-        x = nx; z = nz
+        x += dove.dx; z += dove.dz
         daAngolo = angoloDi(verso); aAngolo = daAngolo
         tempo = 0f; durata = Misure.DURATA_PASSO
         return true
@@ -99,32 +103,7 @@ class Gruppo(private val modulo: Modulo, x: Int, z: Int, verso: Lato) {
             Lato.OVEST -> -Math.PI.toFloat() / 2f
         }
 
-        /**
-         * Dove comincia il gruppo. Se il modulo dichiara una partenza si
-         * usa quella; se non ce l'ha — le stanze e i corridoi non ce
-         * l'hanno — si sceglie la casella piu' centrale e si guarda verso
-         * la meta' con piu' spazio, cosi' non ci si ritrova col naso nel
-         * muro appena entrati.
-         */
-        fun dallaPartenza(m: Modulo): Gruppo {
-            m.partenza?.let { return Gruppo(m, it.x, it.z, it.verso) }
-
-            val celle = m.celle()
-            val cx = celle.sumOf { it.x }.toFloat() / celle.size
-            val cz = celle.sumOf { it.z }.toFloat() / celle.size
-            val centro = celle.minBy { (it.x - cx) * (it.x - cx) + (it.z - cz) * (it.z - cz) }
-
-            // Si guarda dalla parte dove si vede piu' lontano.
-            val verso = Lato.entries.maxBy { l ->
-                var passi = 0
-                var x = centro.x
-                var z = centro.z
-                while (m.calpestabile(x + l.dx, z + l.dz) && passi < 32) {
-                    x += l.dx; z += l.dz; passi++
-                }
-                passi
-            }
-            return Gruppo(m, centro.x, centro.z, verso)
-        }
+        fun dallaPartenza(d: Dungeon): Gruppo =
+            Gruppo(d, d.partenza.x, d.partenza.z, d.versoIniziale)
     }
 }

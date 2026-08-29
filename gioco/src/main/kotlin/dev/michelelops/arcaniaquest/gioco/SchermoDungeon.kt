@@ -16,51 +16,57 @@ import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight
 import com.badlogic.gdx.graphics.g3d.environment.PointLight
 import dev.michelelops.arcaniaquest.regole.Catalogo
+import dev.michelelops.arcaniaquest.regole.Dungeon
 import dev.michelelops.arcaniaquest.regole.Esplorazione
+import dev.michelelops.arcaniaquest.regole.Generatore
 import dev.michelelops.arcaniaquest.regole.Lato
-import dev.michelelops.arcaniaquest.regole.Modulo
+import dev.michelelops.arcaniaquest.regole.Piazzato
 import dev.michelelops.arcaniaquest.regole.Sorte
 import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * Come si avvia una partita. Sta tutto qui invece che in sei parametri
+ * Come si avvia una partita. Sta tutto qui invece che in sette parametri
  * in fila, cosi' aggiungerne uno non tocca ogni chiamata.
  */
 data class Avvio(
-    /** Id del modulo. Se manca, lo pesca il seme col d66. */
+    /** Un solo modulo, per guardarlo da vicino. Se manca, si genera un sotterraneo. */
     val modulo: String? = null,
     val sorte: Sorte = Sorte.nuova(),
+    val quantiPezzi: Int = 12,
     /** Se maggiore di zero: disegna tanti fotogrammi, salva uno scatto e chiude. */
     val scattaDopo: Int = 0,
     val fileScatto: String = "scatto.png",
     /** Telecamera a picco, senza buio: per vedere se alla mesh manca un pezzo. */
     val dallAlto: Boolean = false,
     /** Casella e verso da cui guardare, per rifare due volte lo stesso scatto. */
-    val posa: Triple<Int, Int, Lato>? = null
+    val posa: Triple<Int, Int, Lato>? = null,
+    /** Apre tutte le porte all'avvio: serve a fotografare il prima e il dopo. */
+    val porteSpalancate: Boolean = false
 )
 
 /**
- * Il primo schermo: un modulo, il gruppo dentro, i comandi a caselle e
- * il pannello di servizio.
- *
- * Non e' ancora il gioco — c'e' un pezzo solo e non c'e' l'interfaccia.
- * Serve a provare la cosa che tutto il resto da' per scontata: che il
- * dato diventi geometria e che muoversi a caselle sia come nel prototipo.
+ * Il gioco: un sotterraneo generato, il gruppo dentro, i comandi a
+ * caselle e il pannello di servizio.
  */
 class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() {
 
     private lateinit var catalogo: Catalogo
-    private lateinit var modulo: Modulo
+    private lateinit var generatore: Generatore
+
+    private lateinit var sorte: Sorte
+    private lateinit var dungeon: Dungeon
     private lateinit var gruppo: Gruppo
     private lateinit var esplorazione: Esplorazione
 
     private lateinit var camera: PerspectiveCamera
     private lateinit var batch: ModelBatch
-    private lateinit var ambiente: Environment
-    private var modello: Model? = null
-    private var istanza: ModelInstance? = null
     private var cruscotto: Cruscotto? = null
+
+    /** Un modello e la sua istanza per ogni pezzo, cosi' si rifa' solo quello che cambia. */
+    private val modelli = LinkedHashMap<String, Model>()
+    private val istanze = LinkedHashMap<String, ModelInstance>()
+    private var ambiente = Environment()
 
     private val torciaDelGruppo = PointLight()
     private var ultimoRifiuto: Rifiuto = Rifiuto.NIENTE
@@ -68,25 +74,65 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
 
     override fun create() {
         catalogo = Catalogo.daJson(Gdx.files.internal("moduli/catalogo.json").readString("UTF-8"))
-        // Senza un modulo scelto a mano, e' il seme a pescarlo: cosi' anche
-        // adesso che il pezzo e' uno solo, il seme conta gia' qualcosa.
-        modulo = avvio.modulo?.let { catalogo[it] } ?: catalogo.d66(avvio.sorte.d66())
-
-        gruppo = avvio.posa?.let { Gruppo(modulo, it.first, it.second, it.third) }
-            ?: Gruppo.dallaPartenza(modulo)
-
-        esplorazione = Esplorazione().apply {
-            aggiungiModulo(modulo)
-            visita(modulo.id, gruppo.x, gruppo.z)
-        }
+        generatore = Generatore(catalogo)
 
         camera = PerspectiveCamera(64f, Gdx.graphics.width.toFloat(), Gdx.graphics.height.toFloat()).apply {
             near = 0.15f
-            far = if (avvio.dallAlto) 400f else Misure.FONDO_BUIO
+            far = if (avvio.dallAlto) 1200f else Misure.FONDO_BUIO
         }
         batch = ModelBatch()
         if (!avvio.dallAlto) cruscotto = Cruscotto()
 
+        nuovaPartita(avvio.sorte)
+    }
+
+    /**
+     * Butta il sotterraneo e ne monta un altro. E' quello che fa il tasto
+     * R: cambia il seme, quindi cambia tutto — pezzi, porte, esplorato.
+     */
+    private fun nuovaPartita(conSorte: Sorte) {
+        sorte = conSorte
+        dungeon = avvio.modulo?.let { Dungeon.unoSolo(catalogo[it], sorte.seme) }
+            ?: generatore.genera(sorte, avvio.quantiPezzi)
+
+        if (avvio.porteSpalancate) dungeon.passaggi.forEach { it.apri() }
+
+        gruppo = avvio.posa?.let { Gruppo(dungeon, it.first, it.second, it.third) }
+            ?: Gruppo.dallaPartenza(dungeon)
+
+        esplorazione = Esplorazione(dungeon.caselleInTutto).apply {
+            visita(pezzoCorrente()?.chiave ?: "", gruppo.x, gruppo.z)
+        }
+
+        if (avvio.dallAlto) Gdx.app.log("arcania", "\n" + dungeon.disegno())
+
+        rifaiAmbiente()
+        for (m in modelli.values) m.dispose()
+        modelli.clear(); istanze.clear()
+        for (p in dungeon.pezzi) rifaiPezzo(p)
+    }
+
+    /** Rifa' la mesh di un pezzo solo: serve quando una porta si apre. */
+    private fun rifaiPezzo(p: Piazzato) {
+        modelli.remove(p.chiave)?.dispose()
+        val aperture = dungeon.varchiDi(p.chiave).sorted().map { i ->
+            val k = p.modulo.connettori[i]
+            val cella = p.cellaDi(i)
+            val porta = dungeon.portaFra(cella.x, cella.z, k.lato)
+            Apertura(
+                indice = i,
+                stretta = porta?.conBattente ?: k.porta,
+                battente = porta != null && !porta.aperta && porta.proprietario == (p.chiave to i)
+            )
+        }
+        val modello = CostruttoreMesh.costruisci(p.modulo, aperture)
+        modelli[p.chiave] = modello
+        istanze[p.chiave] = ModelInstance(modello).apply {
+            transform.setToTranslation(p.ox * Misure.CASELLA, 0f, p.oz * Misure.CASELLA)
+        }
+    }
+
+    private fun rifaiAmbiente() {
         ambiente = Environment().apply {
             if (avvio.dallAlto) {
                 set(ColorAttribute(ColorAttribute.AmbientLight, 0.55f, 0.56f, 0.58f, 1f))
@@ -96,20 +142,23 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
                 set(ColorAttribute(ColorAttribute.Fog, 0.015f, 0.018f, 0.024f, 1f))
                 add(DirectionalLight().set(0.13f, 0.14f, 0.17f, -0.4f, -0.9f, -0.25f))
                 add(torciaDelGruppo)
-                for (a in modulo.arredi.filter { it.tipo == "torcia" }) {
+                // Le torce a muro dei pezzi che le hanno. Il numero di luci
+                // che il motore accetta e' piccolo, quindi si tengono solo
+                // quelle vicine al gruppo: le altre non si vedrebbero.
+                for (p in dungeon.pezzi) for (a in p.modulo.arredi.filter { it.tipo == "torcia" }) {
                     add(PointLight().set(
                         Color(1f, 0.62f, 0.28f, 1f),
-                        (a.x + 0.5f) * Misure.CASELLA,
+                        (a.x + p.ox + 0.5f) * Misure.CASELLA,
                         Misure.ALTEZZA_MURO * 0.62f,
-                        (a.z + 0.5f) * Misure.CASELLA,
+                        (a.z + p.oz + 0.5f) * Misure.CASELLA,
                         Misure.FORZA_TORCIA_A_MURO
                     ))
                 }
             }
         }
-
-        modello = CostruttoreMesh.costruisci(modulo).also { istanza = ModelInstance(it) }
     }
+
+    private fun pezzoCorrente(): Piazzato? = dungeon.pezzoIn(gruppo.x, gruppo.z)
 
     override fun resize(width: Int, height: Int) {
         camera.viewportWidth = width.toFloat()
@@ -124,11 +173,12 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT)
         Gdx.gl.glEnable(GL20.GL_DEPTH_TEST)
 
-        istanza?.let {
-            batch.begin(camera)
-            batch.render(it, ambiente)
-            batch.end()
+        batch.begin(camera)
+        for (p in dungeon.pezzi) {
+            if (!avvio.dallAlto && lontano(p)) continue
+            istanze[p.chiave]?.let { batch.render(it, ambiente) }
         }
+        batch.end()
 
         // Il pannello va dopo la scena e senza prova di profondita',
         // altrimenti i muri se lo mangiano.
@@ -139,22 +189,43 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
         if (avvio.scattaDopo > 0 && fotogrammi >= avvio.scattaDopo) scatta()
     }
 
-    private fun voci(): List<Voce> = listOf(
-        Voce("CASELLA", "${gruppo.x}, ${gruppo.z}"),
-        Voce("METRI", "%.1f, %.1f".format(
-            (gruppo.x + 0.5f) * Misure.CASELLA, (gruppo.z + 0.5f) * Misure.CASELLA)),
-        Voce("VERSO", gruppo.verso.name.lowercase()),
-        Voce("STANZA", "${modulo.id}  ${modulo.nome}"),
-        Voce("FAMIGLIA", modulo.famiglia.name.lowercase()),
-        Voce("SEME", avvio.sorte.semeScritto()),
-        Voce("ESPLORATO", "${esplorazione.quante} / ${esplorazione.inTutto} caselle   ${esplorazione.percento}%")
-    )
+    /**
+     * Un pezzo oltre il fondo del buio non si vede comunque: non vale la
+     * pena mandarlo alla scheda video. E' il culling piu' rozzo che ci
+     * sia, ma con quindici pezzi basta e avanza.
+     */
+    private fun lontano(p: Piazzato): Boolean {
+        val cx = (p.ox + p.modulo.larghezza / 2f) * Misure.CASELLA
+        val cz = (p.oz + p.modulo.profondita / 2f) * Misure.CASELLA
+        val raggio = maxOf(p.modulo.larghezza, p.modulo.profondita) * Misure.CASELLA
+        val dx = cx - camera.position.x
+        val dz = cz - camera.position.z
+        return dx * dx + dz * dz > (Misure.FONDO_BUIO + raggio) * (Misure.FONDO_BUIO + raggio)
+    }
 
-    /** A picco sul modulo, tutto dentro l'inquadratura. */
+    private fun voci(): List<Voce> {
+        val p = pezzoCorrente()
+        return listOf(
+            Voce("CASELLA", "${gruppo.x}, ${gruppo.z}"),
+            Voce("METRI", "%.1f, %.1f".format(
+                (gruppo.x + 0.5f) * Misure.CASELLA, (gruppo.z + 0.5f) * Misure.CASELLA)),
+            Voce("VERSO", gruppo.verso.name.lowercase()),
+            Voce("STANZA", p?.let { "${it.modulo.id}  ${it.modulo.nome}" } ?: "-"),
+            Voce("FAMIGLIA", p?.modulo?.famiglia?.name?.lowercase() ?: "-"),
+            Voce("SEME", sorte.semeScritto()),
+            Voce("PEZZI", "${dungeon.pezzi.size}   porte ${dungeon.porteAperte}/${dungeon.porteInTutto} aperte"),
+            Voce("ESPLORATO", "${esplorazione.quante} / ${esplorazione.inTutto} caselle   ${esplorazione.percento}%")
+        )
+    }
+
+    /** A picco su tutto il sotterraneo, tutto dentro l'inquadratura. */
     private fun inquadraDallAlto() {
         val c = Misure.CASELLA
-        val quanto = maxOf(modulo.larghezza, modulo.profondita) * c
-        camera.position.set(modulo.larghezza * c / 2f, quanto * 1.25f, modulo.profondita * c / 2f)
+        val celle = dungeon.pezzi.flatMap { it.celleMondo() }
+        val x0 = celle.minOf { it.x }; val x1 = celle.maxOf { it.x } + 1
+        val z0 = celle.minOf { it.z }; val z1 = celle.maxOf { it.z } + 1
+        val quanto = maxOf(x1 - x0, z1 - z0) * c
+        camera.position.set((x0 + x1) / 2f * c, quanto * 1.2f, (z0 + z1) / 2f * c)
         camera.direction.set(0f, -1f, -0.0001f).nor()
         camera.up.set(0f, 0f, -1f)
         camera.update()
@@ -186,11 +257,18 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
      * Si legge lo stato dei tasti a ogni fotogramma invece degli eventi:
      * tenendo premuto si cammina, e il ritmo lo detta la durata del passo,
      * perche' finche' il gruppo si muove ogni altra mossa viene rifiutata.
+     * Aprire e rigenerare invece vanno alla pressione, non alla tenuta.
      */
     private fun leggiComandi() {
         if (Gdx.input.isKeyJustPressed(Input.Keys.F1)) {
             cruscotto?.let { it.visibile = !it.visibile }
         }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
+            nuovaPartita(Sorte.nuova())
+            Gdx.app.log("arcania", "sotterraneo nuovo, seme ${sorte.semeScritto()}")
+            return
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) apri()
 
         val giu = { k: Int -> Gdx.input.isKeyPressed(k) }
         val mossa = when {
@@ -204,19 +282,32 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
         } ?: return
 
         if (gruppo.esegui(mossa)) {
-            esplorazione.visita(modulo.id, gruppo.x, gruppo.z)
+            esplorazione.visita(pezzoCorrente()?.chiave ?: "", gruppo.x, gruppo.z)
             ultimoRifiuto = Rifiuto.NIENTE
             return
         }
         if (gruppo.rifiuto != ultimoRifiuto) {
             ultimoRifiuto = gruppo.rifiuto
             when (gruppo.rifiuto) {
-                Rifiuto.PORTA_CHIUSA ->
-                    Gdx.app.log("arcania", "La porta e' chiusa: di la' comincia il modulo successivo.")
+                Rifiuto.PORTA_CHIUSA -> Gdx.app.log("arcania", "La porta e' chiusa. SPAZIO per aprirla.")
+                Rifiuto.MURO -> Gdx.app.log("arcania", "Di la' c'e' un altro pezzo, ma non ci si passa.")
                 Rifiuto.ROCCIA -> Gdx.app.log("arcania", "Pietra viva.")
                 else -> {}
             }
         }
+    }
+
+    /**
+     * Apre la porta davanti. Una volta aperta resta aperta, quindi basta
+     * rifare la mesh del pezzo che disegnava il battente: quello e' l'unico
+     * a cui e' cambiato qualcosa.
+     */
+    private fun apri() {
+        val porta = dungeon.apri(gruppo.x, gruppo.z, gruppo.verso) ?: return
+        porta.proprietario?.let { (chiave, _) ->
+            dungeon.pezzi.firstOrNull { it.chiave == chiave }?.let { rifaiPezzo(it) }
+        }
+        Gdx.app.log("arcania", "La porta si apre.")
     }
 
     private fun scatta() {
@@ -236,7 +327,7 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
 
     override fun dispose() {
         batch.dispose()
-        modello?.dispose()
+        for (m in modelli.values) m.dispose()
         cruscotto?.dispose()
     }
 
@@ -245,6 +336,8 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
             "SU / GIU  avanti e indietro",
             "SX / DX  volta di 90 gradi",
             "A D  passo laterale",
+            "SPAZIO  apri",
+            "R  sotterraneo nuovo",
             "F1  nasconde il pannello"
         )
     }

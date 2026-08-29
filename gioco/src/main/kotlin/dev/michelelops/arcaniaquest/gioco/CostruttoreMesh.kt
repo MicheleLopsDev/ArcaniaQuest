@@ -20,6 +20,15 @@ import dev.michelelops.arcaniaquest.regole.Modulo
  * JSON cambia la geometria, e non c'e' un secondo posto da tenere
  * allineato.
  */
+/**
+ * Un'apertura nel muro di un modulo, come la vuole la mesh.
+ *
+ * [stretta] dice se e' un vano da porta o un passaggio largo quanto la
+ * casella; [battente] se il legno va disegnato, cioe' se la porta e'
+ * chiusa e a disegnarla tocca a questo pezzo e non al suo dirimpettaio.
+ */
+data class Apertura(val indice: Int, val stretta: Boolean, val battente: Boolean)
+
 object CostruttoreMesh {
 
     private val PIETRA = Color(0.52f, 0.51f, 0.47f, 1f)
@@ -39,13 +48,20 @@ object CostruttoreMesh {
     /** Il taglio in testa a un muro: chiude lo spessore dove il muro finisce. */
     private class Stipite(val x: Float, val z: Float, val nx: Float, val nz: Float)
 
-    fun costruisci(m: Modulo): Model {
+    /** Come si costruisce un modulo isolato: tutti i varchi aperti. */
+    fun apertureLibere(m: Modulo): List<Apertura> =
+        m.connettori.mapIndexed { i, k -> Apertura(i, k.porta, k.porta) }
+
+    fun costruisci(m: Modulo, aperture: List<Apertura> = apertureLibere(m)): Model {
         val c = Misure.CASELLA
         val h = Misure.ALTEZZA_MURO
         val t = Misure.SPESSORE_MURO
 
         val forme = Pianta.formeDi(m)
-        val varchi = Pianta.varchi(m)
+        // Solo i connettori che sono davvero un passaggio bucano il muro:
+        // quelli rimasti liberi alla fine della generazione restano murati,
+        // altrimenti il dungeon si affaccerebbe sul nulla.
+        val varchi = aperture.map { Pianta.varco(m.connettori[it.indice], it.stretta) }
 
         // I contorni si calcolano una volta sola: servono a piu' passate.
         val contorni = forme.map { Pianta.contorno(it) }
@@ -175,8 +191,9 @@ object CostruttoreMesh {
         //    porta e' alta due metri e mezzo. Senza architrave sopra ogni
         //    porta resta un buco che da' sul nulla.
         val arc = mb.part("architravi", GL20.GL_TRIANGLES, attributi, materiale(PIETRA_MURO))
-        for (k in m.connettori.filter { it.porta }) {
-            val v = Pianta.varco(k)
+        for (a in aperture.filter { it.stretta }) {
+            val k = m.connettori[a.indice]
+            val v = Pianta.varco(k, true)
             val lungoX = k.lato == dev.michelelops.arcaniaquest.regole.Lato.NORD ||
                          k.lato == dev.michelelops.arcaniaquest.regole.Lato.SUD
             val (cx, cz) = centroPorta(k, v, c)
@@ -195,8 +212,9 @@ object CostruttoreMesh {
 
         // 7. porte: un battente nel varco, cosi' si vede che di la' non si passa
         val por = mb.part("porte", GL20.GL_TRIANGLES, attributi, materiale(LEGNO))
-        for (k in m.connettori.filter { it.porta }) {
-            val v = Pianta.varco(k)
+        for (a in aperture.filter { it.battente }) {
+            val k = m.connettori[a.indice]
+            val v = Pianta.varco(k, true)
             val lungoX = k.lato == dev.michelelops.arcaniaquest.regole.Lato.NORD ||
                          k.lato == dev.michelelops.arcaniaquest.regole.Lato.SUD
             val (cx, cz) = centroPorta(k, v, c)
@@ -208,8 +226,9 @@ object CostruttoreMesh {
         // 8. le bande di ferro: due strisce bastano a far leggere il
         //    battente come una porta invece che come un pannello marrone
         val fer = mb.part("ferramenta", GL20.GL_TRIANGLES, attributi, materiale(FERRO))
-        for (k in m.connettori.filter { it.porta }) {
-            val v = Pianta.varco(k)
+        for (a in aperture.filter { it.battente }) {
+            val k = m.connettori[a.indice]
+            val v = Pianta.varco(k, true)
             val lungoX = k.lato == dev.michelelops.arcaniaquest.regole.Lato.NORD ||
                          k.lato == dev.michelelops.arcaniaquest.regole.Lato.SUD
             val (cx, cz) = centroPorta(k, v, c)
