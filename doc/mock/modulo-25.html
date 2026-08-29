@@ -1,0 +1,811 @@
+<title>Sala Ovale 25</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=Spectral:ital,wght@0,300;0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+
+<style>
+:root{
+  --paper:#E6E7E4;
+  --paper-2:#DCDEDA;
+  --card:#F1F2EF;
+  --ink:#15181B;
+  --ink-2:#4A5155;
+  --ink-3:#767E80;
+  --rule:#C3C7C1;
+  --stone:#9AA09D;
+  --accent:#1F6B62;
+  --accent-soft:#D7E3E0;
+  --rust:#8E4A2E;
+  --canvas-bg:#DFE1DD;
+  --canvas-ink:#15181B;
+  --shadow:0 1px 0 rgba(21,24,27,.06), 0 8px 24px -18px rgba(21,24,27,.5);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#121517;
+    --paper-2:#0D0F11;
+    --card:#191D20;
+    --ink:#DFE3E0;
+    --ink-2:#A2ABA8;
+    --ink-3:#7C8683;
+    --rule:#2A3034;
+    --stone:#6E7674;
+    --accent:#57A99C;
+    --accent-soft:#1B322F;
+    --rust:#C0724C;
+    --canvas-bg:#0E1113;
+    --canvas-ink:#DFE3E0;
+    --shadow:0 1px 0 rgba(255,255,255,.03), 0 10px 30px -20px #000;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#121517;
+  --paper-2:#0D0F11;
+  --card:#191D20;
+  --ink:#DFE3E0;
+  --ink-2:#A2ABA8;
+  --ink-3:#7C8683;
+  --rule:#2A3034;
+  --stone:#6E7674;
+  --accent:#57A99C;
+  --accent-soft:#1B322F;
+  --rust:#C0724C;
+  --canvas-bg:#0E1113;
+  --canvas-ink:#DFE3E0;
+  --shadow:0 1px 0 rgba(255,255,255,.03), 0 10px 30px -20px #000;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:"Spectral",Georgia,"Times New Roman",serif;
+  font-size:17px;
+  line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1080px;margin:0 auto;padding:56px 24px 96px;display:flex;flex-direction:column;gap:56px}
+
+/* ---------- testata ---------- */
+.eyebrow{
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--accent);margin:0 0 14px;
+}
+h1{
+  font-family:"IM Fell English SC","Spectral",Georgia,serif;
+  font-weight:400;font-size:clamp(38px,6vw,62px);line-height:1.04;
+  margin:0 0 18px;text-wrap:balance;letter-spacing:.005em;
+}
+.dek{font-size:19px;color:var(--ink-2);max-width:62ch;margin:0;font-weight:300}
+.dek em{color:var(--ink);font-style:italic}
+
+h2{
+  font-family:"IM Fell English SC","Spectral",Georgia,serif;
+  font-weight:400;font-size:27px;margin:0 0 6px;letter-spacing:.01em;
+}
+h3{font-family:"Spectral",serif;font-weight:600;font-size:17px;margin:0 0 6px}
+p{margin:0 0 14px;max-width:66ch}
+section{display:flex;flex-direction:column;gap:18px}
+.sec-head{border-top:1px solid var(--rule);padding-top:18px}
+.sec-head p{margin:0;color:var(--ink-2);max-width:66ch;font-weight:300}
+
+/* ---------- pannelli di resa ---------- */
+.panel{
+  background:var(--card);
+  border:1px solid var(--rule);
+  border-radius:3px;
+  box-shadow:var(--shadow);
+  overflow:hidden;
+}
+.panel-bar{
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:11px 16px;border-bottom:1px solid var(--rule);
+  font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11.5px;
+  letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);
+}
+.panel-bar .name{color:var(--ink);font-weight:600;letter-spacing:.12em}
+.panel-bar .spacer{flex:1 1 auto}
+.btns{display:flex;gap:6px;flex-wrap:wrap}
+button{
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink-2);background:transparent;
+  border:1px solid var(--rule);border-radius:2px;
+  padding:5px 10px;cursor:pointer;transition:background .14s,color .14s,border-color .14s;
+}
+button:hover{background:var(--accent-soft);color:var(--ink);border-color:var(--accent)}
+button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--card)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+canvas{display:block;width:100%;background:var(--canvas-bg);touch-action:none}
+#cv-plan{height:clamp(240px,38vw,420px)}
+#cv-iso{height:clamp(280px,42vw,460px)}
+#cv-3d{height:clamp(300px,46vw,500px)}
+.panel-foot{
+  padding:10px 16px;border-top:1px solid var(--rule);
+  font-size:14.5px;color:var(--ink-2);font-weight:300;
+}
+.grab{cursor:grab}
+.grab:active{cursor:grabbing}
+
+/* ---------- misure ---------- */
+.specs{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:3px;overflow:hidden;
+}
+.spec{background:var(--card);padding:14px 16px}
+.spec dt{
+  font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink-3);margin-bottom:5px;
+}
+.spec dd{
+  margin:0;font-family:"JetBrains Mono",monospace;font-size:19px;
+  font-variant-numeric:tabular-nums;color:var(--ink);
+}
+.spec dd small{font-size:12px;color:var(--ink-3);font-weight:400}
+
+/* ---------- codice ---------- */
+.code{
+  background:var(--paper-2);border:1px solid var(--rule);border-radius:3px;
+  padding:18px 20px;overflow-x:auto;
+  font-family:"JetBrains Mono",ui-monospace,monospace;font-size:13px;line-height:1.72;
+  color:var(--ink-2);
+}
+.code .k{color:var(--accent)}
+.code .n{color:var(--ink)}
+.code .s{color:var(--rust)}
+.code .c{color:var(--ink-3);font-style:italic}
+
+/* ---------- confronto ---------- */
+.cmp{width:100%;border-collapse:collapse;font-size:15.5px}
+.cmp th,.cmp td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--rule);vertical-align:top}
+.cmp thead th{
+  font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink-3);font-weight:400;border-bottom:1px solid var(--ink-3);
+}
+.cmp tbody th{font-weight:600;width:22%;color:var(--ink)}
+.cmp td{color:var(--ink-2);font-weight:300;width:39%}
+.cmp-scroll{overflow-x:auto}
+
+.note{
+  border-left:2px solid var(--accent);padding:2px 0 2px 18px;
+  color:var(--ink-2);font-weight:300;
+}
+.note strong{color:var(--ink);font-weight:600}
+footer{
+  border-top:1px solid var(--rule);padding-top:18px;
+  font-family:"JetBrains Mono",monospace;font-size:11.5px;
+  letter-spacing:.08em;color:var(--ink-3);text-transform:uppercase;
+}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">ArcaniaQuest · tabella moduli · d66</p>
+    <h1>Sala Ovale 25</h1>
+    <p class="dek">Lo stesso modulo, ricostruito una volta sola e disegnato tre volte: la pianta che
+      viene dal foglio stampato, la resa isometrica, la resa in prospettiva come la darebbe libGDX.
+      Le tre viste qui sotto <em>non sono tre disegni</em> — sono la stessa geometria vista da tre
+      telecamere diverse. È esattamente il rapporto che avrebbero nel gioco.</p>
+  </header>
+
+  <section>
+    <div class="sec-head">
+      <h2>Come ho letto il modulo</h2>
+      <p>Dal foglio: camera ovale con un corridoio che esce a est e una porta sul lato ovest.
+        L'ho appoggiata a una griglia di caselle da 3 metri, perché è la griglia che permette
+        ai moduli di incastrarsi senza calcoli.</p>
+    </div>
+    <dl class="specs">
+      <div class="spec"><dt>Ingombro</dt><dd>6 × 4 <small>caselle</small></dd></div>
+      <div class="spec"><dt>Camera</dt><dd>3 × 4 <small>r 0,9</small></dd></div>
+      <div class="spec"><dt>Corridoio</dt><dd>3 × 1</dd></div>
+      <div class="spec"><dt>Connettori</dt><dd>2 <small>est · ovest</small></dd></div>
+      <div class="spec"><dt>Altezza muri</dt><dd>3,0 <small>m</small></dd></div>
+    </dl>
+    <p class="note"><strong>La sagoma ovale non è fatta di caselle.</strong> Il pavimento è un
+      poligono unico con le fughe disegnate sopra, i muri sono un anello estruso lungo il suo
+      contorno. Solo i <em>connettori</em> stanno sulla griglia — ed è quello che basta perché
+      il generatore possa attaccarci un altro modulo.</p>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>La pianta</h2>
+      <p>La ricostruzione a confronto col foglio: proiezione ortogonale dall'alto, muri in nero
+        pieno, fughe delle lastre, porte in terracotta.</p>
+    </div>
+    <div class="panel">
+      <div class="panel-bar">
+        <span class="name">Pianta</span>
+        <span>ortogonale · dall'alto</span>
+      </div>
+      <canvas id="cv-plan" height="360" aria-label="Pianta del modulo 25"></canvas>
+      <div class="panel-foot">Le due tacche sui bordi est e ovest sono i connettori: lì il modulo
+        successivo si aggancia senza scarti.</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Resa isometrica</h2>
+      <p>Proiezione ortogonale a 45°, nessuna prospettiva. I muri rivolti verso di te vengono
+        tolti: è il taglio classico dei crawler isometrici, senza cui la stanza non si vede.</p>
+    </div>
+    <div class="panel">
+      <div class="panel-bar">
+        <span class="name">Isometrico</span>
+        <span>ortogonale · 45° / 30°</span>
+        <span class="spacer"></span>
+        <div class="btns">
+          <button type="button" data-iso="rot" data-dir="-1">↺ ruota</button>
+          <button type="button" data-iso="rot" data-dir="1">ruota ↻</button>
+        </div>
+      </div>
+      <canvas id="cv-iso" height="440" aria-label="Vista isometrica del modulo 25"></canvas>
+      <div class="panel-foot">Scala costante: una casella in fondo misura sullo schermo quanto una
+        casella in primo piano. È questo che rende leggibili le distanze a colpo d'occhio.</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Resa 3D · libGDX</h2>
+      <p>Telecamera prospettica, la stessa mesh. Trascina per orbitare, rotella per avvicinarti.
+        In prima persona i muri tornano tutti al loro posto e le torce fanno il lavoro che devono fare.</p>
+    </div>
+    <div class="panel">
+      <div class="panel-bar">
+        <span class="name">3D prospettico</span>
+        <span>fov 55°</span>
+        <span class="spacer"></span>
+        <div class="btns">
+          <button type="button" data-cam="tq" aria-pressed="true">Tre quarti</button>
+          <button type="button" data-cam="rad" aria-pressed="false">Radente</button>
+          <button type="button" data-cam="fp" aria-pressed="false">Prima persona</button>
+        </div>
+      </div>
+      <canvas id="cv-3d" height="480" class="grab" aria-label="Vista prospettica del modulo 25"></canvas>
+      <div class="panel-foot">Due torce, luce direzionale fredda dall'alto: la stessa illuminazione
+        che in libGDX daresti con un <span style="font-family:'JetBrains Mono',monospace;font-size:.86em">DirectionalLight</span>
+        più due <span style="font-family:'JetBrains Mono',monospace;font-size:.86em">PointLight</span> nell'<span style="font-family:'JetBrains Mono',monospace;font-size:.86em">Environment</span>.</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Cosa cambia, in pratica</h2>
+      <p>Non è una questione di gusto: le due rese hanno conseguenze diverse sul lavoro che ti aspetta.</p>
+    </div>
+    <div class="cmp-scroll">
+      <table class="cmp">
+        <thead>
+          <tr><th scope="col"></th><th scope="col">Isometrico</th><th scope="col">3D prospettico</th></tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">Leggibilità</th>
+            <td>Vedi tutta la stanza e la posizione di ogni pedina. Ideale per un gioco tattico a caselle.</td>
+            <td>Immersivo, ma serve una minimappa: da dentro non sai mai bene dove sei.</td></tr>
+          <tr><th scope="row">Muri</th>
+            <td>Vanno tolti quelli davanti. Regola semplice, risultato sempre uguale.</td>
+            <td>Con la telecamera libera il taglio dei muri diventa un problema continuo.</td></tr>
+          <tr><th scope="row">Asset</th>
+            <td>Le stesse mesh. Puoi partire con volumi grezzi e texturizzare dopo.</td>
+            <td>Le stesse mesh, ma ogni difetto si vede da vicino: servono normal map e dettaglio.</td></tr>
+          <tr><th scope="row">Prestazioni Android</th>
+            <td>Telecamera fissa: culling banale, si disegna solo il modulo visibile.</td>
+            <td>Serve occlusion culling per modulo, altrimenti su telefono si sente.</td></tr>
+          <tr><th scope="row">Interfaccia</th>
+            <td>Puntamento a caselle: tocchi la casella, il personaggio ci va. Naturale sul telefono.</td>
+            <td>Servono controlli di camera sul touch. È la parte che fa perdere più tempo.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note"><strong>Il punto:</strong> la geometria è identica, cambia solo la telecamera —
+      quindi la scelta non va fatta adesso. Se il formato dei moduli resta quello qui sotto, isometrico
+      e prospettico restano entrambi aperti fino a quando non avrai visto girare il gioco.</p>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Il modulo come dato</h2>
+      <p>Quello che il generatore legge per pescare col d66 e incastrare i pezzi. La mesh è un
+        file a parte; qui dentro sta solo ciò che serve alle regole.</p>
+    </div>
+    <div class="code"><span class="c">// moduli/m25.json — pescato con d66 = 25</span>
+{
+  <span class="k">"id"</span>: <span class="s">"M25"</span>,
+  <span class="k">"nome"</span>: <span class="s">"Sala Ovale"</span>,
+  <span class="k">"tipo"</span>: <span class="s">"stanza"</span>,          <span class="c">// "corridoio" per quelli con la C</span>
+  <span class="k">"d66"</span>: <span class="n">25</span>,
+  <span class="k">"ingombro"</span>: { <span class="k">"w"</span>: <span class="n">6</span>, <span class="k">"d"</span>: <span class="n">4</span> },
+  <span class="k">"pianta"</span>: [
+    { <span class="k">"forma"</span>: <span class="s">"rettangoloArrotondato"</span>, <span class="k">"x"</span>: <span class="n">0</span>, <span class="k">"z"</span>: <span class="n">0</span>, <span class="k">"w"</span>: <span class="n">3</span>, <span class="k">"d"</span>: <span class="n">4</span>, <span class="k">"raggio"</span>: <span class="n">0.9</span> },
+    { <span class="k">"forma"</span>: <span class="s">"rettangolo"</span>,             <span class="k">"x"</span>: <span class="n">3</span>, <span class="k">"z"</span>: <span class="n">1</span>, <span class="k">"w"</span>: <span class="n">3</span>, <span class="k">"d"</span>: <span class="n">1</span> }
+  ],
+  <span class="k">"connettori"</span>: [
+    { <span class="k">"id"</span>: <span class="s">"E"</span>, <span class="k">"lato"</span>: <span class="s">"est"</span>,   <span class="k">"x"</span>: <span class="n">6</span>, <span class="k">"z"</span>: <span class="n">1</span>, <span class="k">"ampiezza"</span>: <span class="n">1</span>, <span class="k">"porta"</span>: <span class="n">true</span> },
+    { <span class="k">"id"</span>: <span class="s">"O"</span>, <span class="k">"lato"</span>: <span class="s">"ovest"</span>, <span class="k">"x"</span>: <span class="n">0</span>, <span class="k">"z"</span>: <span class="n">2</span>, <span class="k">"ampiezza"</span>: <span class="n">1</span>, <span class="k">"porta"</span>: <span class="n">true</span> }
+  ],
+  <span class="k">"mesh"</span>: <span class="s">"moduli/m25_sala_ovale.g3db"</span>,
+  <span class="k">"segnaposti"</span>: [
+    { <span class="k">"tipo"</span>: <span class="s">"torcia"</span>, <span class="k">"x"</span>: <span class="n">1.5</span>, <span class="k">"y"</span>: <span class="n">1.9</span>, <span class="k">"z"</span>: <span class="n">3.7</span> },
+    { <span class="k">"tipo"</span>: <span class="s">"torcia"</span>, <span class="k">"x"</span>: <span class="n">4.6</span>, <span class="k">"y"</span>: <span class="n">1.9</span>, <span class="k">"z"</span>: <span class="n">1.1</span> }
+  ]
+}</div>
+    <p class="note">Un connettore dichiara <strong>lato, posizione sulla griglia e ampiezza</strong>.
+      Il generatore ne prende uno libero, pesca un modulo con un connettore compatibile sul lato
+      opposto, lo ruota e lo trasla finché i due combaciano. Tutto il resto — sagoma ovale compresa —
+      non lo riguarda.</p>
+  </section>
+
+  <footer>ArcaniaQuest · mock di ricostruzione · modulo 25 di 36</footer>
+</div>
+
+<script>
+"use strict";
+(function(){
+
+/* ============================================================
+   GEOMETRIA DEL MODULO
+   Sistema: x verso est, y verso l'alto, z verso sud.
+   Unita' = casella (3 m).
+   ============================================================ */
+const H = 1.0;    // altezza dei muri, in caselle
+const T = 0.25;   // spessore dei muri
+
+// Rettangolo con gli angoli arrotondati: la sagoma della camera.
+function rettArrotondato(x0, z0, w, d, r, seg){
+  const pts = [];
+  const angoli = [
+    [x0+w-r, z0+r,   -Math.PI/2, 0],
+    [x0+w-r, z0+d-r, 0, Math.PI/2],
+    [x0+r,   z0+d-r, Math.PI/2, Math.PI],
+    [x0+r,   z0+r,   Math.PI, Math.PI*1.5]
+  ];
+  for(const [cx, cz, a0, a1] of angoli){
+    for(let i=0; i<=seg; i++){
+      const a = a0 + (a1-a0)*i/seg;
+      const p = [cx+Math.cos(a)*r, cz+Math.sin(a)*r];
+      const u = pts[pts.length-1];
+      if(!u || Math.hypot(u[0]-p[0], u[1]-p[1]) > 1e-6) pts.push(p);
+    }
+  }
+  return pts;
+}
+
+// Suddivide ogni lato: serve perche' le aperture si ritagliano per segmenti.
+function suddividi(poly, passo){
+  const out = [];
+  for(let i=0; i<poly.length; i++){
+    const a = poly[i], b = poly[(i+1)%poly.length];
+    const n = Math.max(1, Math.ceil(Math.hypot(b[0]-a[0], b[1]-a[1])/passo));
+    for(let k=0; k<n; k++){
+      const t = k/n;
+      out.push([a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t]);
+    }
+  }
+  return out;
+}
+
+const CAMERA_POLY   = suddividi(rettArrotondato(0, 0, 3, 4, 0.9, 9), 0.15);
+const CORRIDOIO_POLY = suddividi([[3,1],[6,1],[6,2],[3,2]], 0.15);
+
+// Le aperture: dove il muro non c'e'. Rettangoli in pianta.
+const APERTURE = [
+  {x0:2.75, x1:3.25, z0:1.0, z1:2.0},  // bocca del corridoio
+  {x0:5.75, x1:6.25, z0:1.0, z1:2.0},  // connettore est
+  {x0:-0.25, x1:0.25, z0:2.0, z1:3.0}  // connettore ovest
+];
+function dentroApertura(x, z){
+  return APERTURE.some(a => x>a.x0 && x<a.x1 && z>a.z0 && z<a.z1);
+}
+
+const TORCE = [
+  {p:[1.5, 0.62, 3.62], c:[1.0, 0.58, 0.24], i:1.5},
+  {p:[4.6, 0.62, 1.12], c:[1.0, 0.58, 0.24], i:1.5}
+];
+
+// --- costruzione delle facce -------------------------------------------------
+const COL = {
+  pavimento: [0.60, 0.60, 0.58],
+  muroInt:   [0.66, 0.66, 0.63],
+  muroEst:   [0.50, 0.50, 0.48],
+  muroCima:  [0.44, 0.45, 0.44],
+  legno:     [0.40, 0.25, 0.16],
+  ferro:     [0.20, 0.21, 0.22],
+  fuoco:     [1.00, 0.72, 0.34]
+};
+
+function centro(pts){
+  const c = [0,0,0];
+  for(const p of pts){ c[0]+=p[0]; c[1]+=p[1]; c[2]+=p[2]; }
+  return [c[0]/pts.length, c[1]/pts.length, c[2]/pts.length];
+}
+function normale(pts){
+  const [a,b,c] = pts;
+  const u = [b[0]-a[0], b[1]-a[1], b[2]-a[2]];
+  const v = [c[0]-a[0], c[1]-a[1], c[2]-a[2]];
+  const n = [u[1]*v[2]-u[2]*v[1], u[2]*v[0]-u[0]*v[2], u[0]*v[1]-u[1]*v[0]];
+  const l = Math.hypot(n[0],n[1],n[2]) || 1;
+  return [n[0]/l, n[1]/l, n[2]/l];
+}
+
+function faccia(pts, col, opt){
+  const f = Object.assign({pts, col, n:normale(pts), c:centro(pts)}, opt||{});
+  return f;
+}
+
+function scatola(cx, cy, cz, sx, sy, sz, col, opt){
+  const X0=cx-sx/2, X1=cx+sx/2, Y0=cy-sy/2, Y1=cy+sy/2, Z0=cz-sz/2, Z1=cz+sz/2;
+  const v = [
+    [X0,Y0,Z0],[X1,Y0,Z0],[X1,Y0,Z1],[X0,Y0,Z1],
+    [X0,Y1,Z0],[X1,Y1,Z0],[X1,Y1,Z1],[X0,Y1,Z1]
+  ];
+  const q = [[4,5,6,7],[3,2,1,0],[0,1,5,4],[2,3,7,6],[1,2,6,5],[3,0,4,7]];
+  return q.map(idx => faccia(idx.map(i=>v[i]), col, opt));
+}
+
+function costruisciScena(){
+  const facce = [];
+  const fughe = [];
+  const pavimenti = [];
+
+  for(const poly of [CAMERA_POLY, CORRIDOIO_POLY]){
+    // pavimento: ventaglio di triangoli dal baricentro
+    let bx=0, bz=0;
+    for(const p of poly){ bx+=p[0]; bz+=p[1]; }
+    bx/=poly.length; bz/=poly.length;
+    for(let i=0; i<poly.length; i++){
+      const a = poly[i], b = poly[(i+1)%poly.length];
+      pavimenti.push(faccia([[bx,0,bz],[a[0],0,a[1]],[b[0],0,b[1]]], COL.pavimento, {tipo:'pav'}));
+    }
+
+    // muri: un segmento alla volta, saltando le aperture
+    for(let i=0; i<poly.length; i++){
+      const a = poly[i], b = poly[(i+1)%poly.length];
+      const mx = (a[0]+b[0])/2, mz = (a[1]+b[1])/2;
+      if(dentroApertura(mx, mz)) continue;
+      // normale esterna: verso l'esterno del poligono
+      let nx = b[1]-a[1], nz = -(b[0]-a[0]);
+      const l = Math.hypot(nx,nz) || 1; nx/=l; nz/=l;
+      if((mx-bx)*nx + (mz-bz)*nz < 0){ nx=-nx; nz=-nz; }
+      const est = {n2:[nx,nz]};
+      const A=[a[0],0,a[1]], B=[b[0],0,b[1]];
+      const Ae=[a[0]+nx*T,0,a[1]+nz*T], Be=[b[0]+nx*T,0,b[1]+nz*T];
+      const up = p => [p[0], H, p[2]];
+      facce.push(faccia([A,B,up(B),up(A)], COL.muroInt, {tipo:'muro', n2:est.n2}));
+      facce.push(faccia([Be,Ae,up(Ae),up(Be)], COL.muroEst, {tipo:'muro', n2:est.n2}));
+      facce.push(faccia([up(A),up(B),up(Be),up(Ae)], COL.muroCima, {tipo:'muro', n2:est.n2}));
+    }
+  }
+
+  // porte nei due connettori
+  const porte = [
+    {cx:6.0, cz:1.5, sx:0.22, sz:0.9, n2:[1,0]},
+    {cx:0.0, cz:2.5, sx:0.22, sz:0.9, n2:[-1,0]}
+  ];
+  for(const p of porte){
+    facce.push(...scatola(p.cx, 0.42, p.cz, p.sx, 0.84, p.sz, COL.legno, {tipo:'porta'}));
+    facce.push(...scatola(p.cx, 0.30, p.cz, p.sx+0.04, 0.07, p.sz*0.96, COL.ferro, {tipo:'porta'}));
+    facce.push(...scatola(p.cx, 0.64, p.cz, p.sx+0.04, 0.07, p.sz*0.96, COL.ferro, {tipo:'porta'}));
+    facce.push(...scatola(p.cx, 0.92, p.cz, 0.34, 0.16, p.sz+0.22, COL.muroCima, {tipo:'porta'}));
+  }
+
+  // torce: staffa di ferro + fiamma non illuminata
+  for(const t of TORCE){
+    facce.push(...scatola(t.p[0], t.p[1]-0.06, t.p[2], 0.09, 0.20, 0.09, COL.ferro, {tipo:'prop'}));
+    facce.push(...scatola(t.p[0], t.p[1]+0.10, t.p[2], 0.13, 0.15, 0.13, COL.fuoco, {tipo:'prop', emissiva:true}));
+  }
+
+  // fughe delle lastre: le linee della griglia ritagliate sul pavimento
+  for(const poly of [CAMERA_POLY, CORRIDOIO_POLY]){
+    for(let x=0; x<=6; x+=1) aggiungiFuga(fughe, poly, [x,-1],[x,6]);
+    for(let z=0; z<=4; z+=1) aggiungiFuga(fughe, poly, [-1,z],[7,z]);
+  }
+
+  return {facce, fughe, pavimenti};
+}
+
+// Taglia un segmento contro un poligono convesso (Cyrus-Beck).
+function aggiungiFuga(out, poly, p0, p1){
+  let bx=0, bz=0;
+  for(const p of poly){ bx+=p[0]; bz+=p[1]; }
+  bx/=poly.length; bz/=poly.length;
+  let t0=0, t1=1;
+  const dx=p1[0]-p0[0], dz=p1[1]-p0[1];
+  for(let i=0; i<poly.length; i++){
+    const a=poly[i], b=poly[(i+1)%poly.length];
+    let nx=b[1]-a[1], nz=-(b[0]-a[0]);
+    if((a[0]-bx)*nx + (a[1]-bz)*nz < 0){ nx=-nx; nz=-nz; }
+    const den = nx*dx + nz*dz;
+    const num = nx*(a[0]-p0[0]) + nz*(a[1]-p0[1]);
+    if(Math.abs(den) < 1e-9){ if(num < 0) return; continue; }
+    const t = num/den;
+    if(den > 0){ if(t > t1) return; if(t > t0) t0 = t; }
+    else       { if(t < t0) return; if(t < t1) t1 = t; }
+  }
+  if(t1 - t0 < 0.02) return;
+  const q = 0.006; // un filo sopra il pavimento, per non sfarfallare
+  out.push([
+    [p0[0]+dx*t0, q, p0[1]+dz*t0],
+    [p0[0]+dx*t1, q, p0[1]+dz*t1]
+  ]);
+}
+
+const SCENA = costruisciScena();
+const BERSAGLIO = [3.0, 0.35, 2.0];
+
+/* ============================================================
+   RENDERING
+   Proiezione a mano, ordinamento del pittore, ombreggiatura piatta.
+   ============================================================ */
+const LUCE_DIR = (function(){
+  const v=[-0.45, 0.86, -0.25]; const l=Math.hypot(v[0],v[1],v[2]);
+  return [v[0]/l, v[1]/l, v[2]/l];
+})();
+const AMBIENTE = [0.34, 0.37, 0.42];
+const CHIAVE   = [0.52, 0.52, 0.50];
+
+function ombreggia(col, n, c){
+  const nd = Math.max(0, n[0]*LUCE_DIR[0] + n[1]*LUCE_DIR[1] + n[2]*LUCE_DIR[2]);
+  let r = col[0]*(AMBIENTE[0] + CHIAVE[0]*nd);
+  let g = col[1]*(AMBIENTE[1] + CHIAVE[1]*nd);
+  let b = col[2]*(AMBIENTE[2] + CHIAVE[2]*nd);
+  for(const t of TORCE){
+    const dx=t.p[0]-c[0], dy=t.p[1]-c[1], dz=t.p[2]-c[2];
+    const d2 = dx*dx+dy*dy+dz*dz;
+    const d = Math.sqrt(d2) || 1e-4;
+    const ld = Math.max(0, (n[0]*dx + n[1]*dy + n[2]*dz)/d);
+    const att = t.i/(1 + 0.75*d2);
+    r += col[0]*t.c[0]*ld*att;
+    g += col[1]*t.c[1]*ld*att;
+    b += col[2]*t.c[2]*ld*att;
+  }
+  return "rgb(" + (Math.min(255, r*255)|0) + "," + (Math.min(255, g*255)|0) + "," + (Math.min(255, b*255)|0) + ")";
+}
+function piatto(col, f){
+  let k = 1;
+  if(f.tipo === 'muro') k = 0.34;
+  if(f.tipo === 'porta') k = 0.62;
+  const m = c => (Math.min(255, c*255*k)|0);
+  return "rgb(" + m(col[0]) + "," + m(col[1]) + "," + m(col[2]) + ")";
+}
+
+function cameraDa(cam, w, h){
+  const cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
+  const pos = cam.pos || [
+    cam.target[0] + cam.dist*cp*Math.sin(cam.yaw),
+    cam.target[1] + cam.dist*sp,
+    cam.target[2] + cam.dist*cp*Math.cos(cam.yaw)
+  ];
+  const tgt = cam.target;
+  let f = [tgt[0]-pos[0], tgt[1]-pos[1], tgt[2]-pos[2]];
+  const fl = Math.hypot(f[0],f[1],f[2]) || 1; f = [f[0]/fl, f[1]/fl, f[2]/fl];
+  let up = Math.abs(f[1]) > 0.995 ? [0,0,-1] : [0,1,0];
+  let r = [f[1]*up[2]-f[2]*up[1], f[2]*up[0]-f[0]*up[2], f[0]*up[1]-f[1]*up[0]];
+  const rl = Math.hypot(r[0],r[1],r[2]) || 1; r = [r[0]/rl, r[1]/rl, r[2]/rl];
+  const u = [r[1]*f[2]-r[2]*f[1], r[2]*f[0]-r[0]*f[2], r[0]*f[1]-r[1]*f[0]];
+  const fpx = (h/2)/Math.tan((cam.fov||55)*Math.PI/360);
+  return {pos, f, r, u, fpx, cx:w/2, cy:h/2, orto:!!cam.orto, scala:cam.scala||60};
+}
+function vista(K, p){
+  const vx = p[0]-K.pos[0], vy = p[1]-K.pos[1], vz = p[2]-K.pos[2];
+  return [
+    vx*K.r[0] + vy*K.r[1] + vz*K.r[2],
+    vx*K.u[0] + vy*K.u[1] + vz*K.u[2],
+    vx*K.f[0] + vy*K.f[1] + vz*K.f[2]
+  ];
+}
+function schermo(K, v){
+  if(K.orto) return [K.cx + v[0]*K.scala, K.cy - v[1]*K.scala];
+  const s = K.fpx/v[2];
+  return [K.cx + v[0]*s, K.cy - v[1]*s];
+}
+// taglio sul piano vicino, altrimenti in prima persona esplode
+function tagliaVicino(vs, near){
+  const out = [];
+  for(let i=0; i<vs.length; i++){
+    const a = vs[i], b = vs[(i+1)%vs.length];
+    const ain = a[2] >= near, bin = b[2] >= near;
+    if(ain) out.push(a);
+    if(ain !== bin){
+      const t = (near - a[2])/(b[2] - a[2]);
+      out.push([a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, near]);
+    }
+  }
+  return out;
+}
+
+function disegna(cv, cam){
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if(!w || !h) return;
+  cv.width = w*dpr; cv.height = h*dpr;
+  const g = cv.getContext("2d");
+  g.setTransform(dpr,0,0,dpr,0,0);
+
+  const stile = getComputedStyle(document.body);
+  g.fillStyle = stile.getPropertyValue("--canvas-bg").trim() || "#ddd";
+  g.fillRect(0,0,w,h);
+
+  const K = cameraDa(cam, w, h);
+  const near = 0.06;
+  if(cam.orto){
+    const e = cam.estensione || [7.6, 5.6];
+    K.scala = Math.min(w/e[0], h/e[1]);
+  }
+
+  const buf = [];
+  const spingi = (f, gruppo) => {
+    // muri fra la telecamera e la stanza: si tolgono (taglio da crawler)
+    if(cam.tagliaMuri && f.n2){
+      const dx = K.pos[0]-f.c[0], dz = K.pos[2]-f.c[2];
+      if(f.n2[0]*dx + f.n2[1]*dz > 0) return;
+    }
+    if(!cam.piatta && f.n && !f.emissiva){
+      const d = (K.pos[0]-f.c[0])*f.n[0] + (K.pos[1]-f.c[1])*f.n[1] + (K.pos[2]-f.c[2])*f.n[2];
+      if(d <= 0 && f.tipo !== 'pav') return;
+    }
+    let vs = f.pts.map(p => vista(K, p));
+    if(!K.orto){
+      vs = tagliaVicino(vs, near);
+      if(vs.length < 3) return;
+    }
+    const pts = vs.map(v => schermo(K, v));
+    let dep = 0; for(const v of vs) dep += v[2];
+    dep /= vs.length;
+    const col = f.emissiva ? "rgb(255,196,110)"
+              : cam.piatta ? piatto(f.col, f) : ombreggia(f.col, f.n, f.c);
+    buf.push({pts, dep, col, gruppo});
+  };
+
+  for(const f of SCENA.pavimenti) spingi(f, 0);
+  for(const f of SCENA.facce) spingi(f, 1);
+
+  const inchiostro = stile.getPropertyValue("--canvas-ink").trim() || "#222";
+
+  const versa = gruppo => {
+    const q = buf.filter(o => o.gruppo === gruppo).sort((a,b) => b.dep - a.dep);
+    for(const o of q){
+      g.beginPath();
+      g.moveTo(o.pts[0][0], o.pts[0][1]);
+      for(let i=1; i<o.pts.length; i++) g.lineTo(o.pts[i][0], o.pts[i][1]);
+      g.closePath();
+      g.fillStyle = o.col; g.fill();
+      g.strokeStyle = o.col; g.lineWidth = 1; g.stroke();  // chiude le fessure fra i triangoli
+    }
+  };
+
+  versa(0);
+
+  // fughe delle lastre, subito sopra il pavimento
+  g.strokeStyle = cam.piatta ? inchiostro : "rgba(0,0,0,0.30)";
+  g.globalAlpha = cam.piatta ? 0.30 : 1;
+  g.lineWidth = cam.piatta ? 1 : 1;
+  for(const [a,b] of SCENA.fughe){
+    let va = vista(K,a), vb = vista(K,b);
+    if(!K.orto){
+      if(va[2] < near && vb[2] < near) continue;
+      if(va[2] < near){ const t=(near-va[2])/(vb[2]-va[2]); va=[va[0]+(vb[0]-va[0])*t, va[1]+(vb[1]-va[1])*t, near]; }
+      if(vb[2] < near){ const t=(near-vb[2])/(va[2]-vb[2]); vb=[vb[0]+(va[0]-vb[0])*t, vb[1]+(va[1]-vb[1])*t, near]; }
+    }
+    const sa = schermo(K,va), sb = schermo(K,vb);
+    g.beginPath(); g.moveTo(sa[0],sa[1]); g.lineTo(sb[0],sb[1]); g.stroke();
+  }
+  g.globalAlpha = 1;
+
+  versa(1);
+
+  // alone caldo delle torce, solo nelle viste illuminate
+  if(!cam.piatta){
+    g.globalCompositeOperation = "lighter";
+    for(const t of TORCE){
+      const v = vista(K, t.p);
+      if(!K.orto && v[2] < near) continue;
+      const s = schermo(K, v);
+      const rag = K.orto ? K.scala*0.9 : Math.max(18, K.fpx/Math.max(0.6, v[2])*0.9);
+      const grad = g.createRadialGradient(s[0], s[1], 0, s[0], s[1], rag);
+      grad.addColorStop(0, "rgba(255,178,96,0.36)");
+      grad.addColorStop(1, "rgba(255,178,96,0)");
+      g.fillStyle = grad;
+      g.beginPath(); g.arc(s[0], s[1], rag, 0, Math.PI*2); g.fill();
+    }
+    g.globalCompositeOperation = "source-over";
+  }
+}
+
+/* ============================================================
+   I TRE PANNELLI
+   ============================================================ */
+const cvPlan = document.getElementById("cv-plan");
+const cvIso  = document.getElementById("cv-iso");
+const cv3d   = document.getElementById("cv-3d");
+
+const camPlan = {target:BERSAGLIO, dist:14, yaw:0, pitch:Math.PI/2*0.995,
+                 orto:true, piatta:true, tagliaMuri:false, estensione:[6.8, 4.8]};
+let isoYaw = Math.PI*0.25;
+function camIso(){
+  return {target:BERSAGLIO, dist:14, yaw:isoYaw, pitch:0.55,
+          orto:true, tagliaMuri:true, estensione:[8.0, 5.0]};
+}
+const cam3d = {target:BERSAGLIO, dist:7.4, yaw:Math.PI*0.22, pitch:0.62, fov:55, tagliaMuri:true};
+let modo3d = "tq";
+
+function cameraCorrente3d(){
+  if(modo3d === "fp"){
+    return {target:[3.4, 0.45, 1.5], pos:[0.9, 0.55, 2.6], fov:62, tagliaMuri:false};
+  }
+  return cam3d;
+}
+
+function tutto(){
+  disegna(cvPlan, camPlan);
+  disegna(cvIso, camIso());
+  disegna(cv3d, cameraCorrente3d());
+}
+
+// --- controlli isometrici ---
+for(const b of document.querySelectorAll('[data-iso="rot"]')){
+  b.addEventListener("click", () => {
+    isoYaw += Number(b.dataset.dir) * Math.PI/2;
+    disegna(cvIso, camIso());
+  });
+}
+
+// --- controlli 3D ---
+const bottoni3d = Array.from(document.querySelectorAll("[data-cam]"));
+for(const b of bottoni3d){
+  b.addEventListener("click", () => {
+    modo3d = b.dataset.cam;
+    if(modo3d === "tq"){ cam3d.pitch = 0.62; cam3d.dist = 7.4; }
+    if(modo3d === "rad"){ cam3d.pitch = 0.20; cam3d.dist = 6.6; }
+    for(const o of bottoni3d) o.setAttribute("aria-pressed", String(o === b));
+    disegna(cv3d, cameraCorrente3d());
+  });
+}
+
+let trascina = null;
+cv3d.addEventListener("pointerdown", e => {
+  if(modo3d === "fp") return;
+  trascina = {x:e.clientX, y:e.clientY};
+  cv3d.setPointerCapture(e.pointerId);
+});
+cv3d.addEventListener("pointermove", e => {
+  if(!trascina) return;
+  cam3d.yaw   -= (e.clientX - trascina.x) * 0.008;
+  cam3d.pitch  = Math.max(0.06, Math.min(1.45, cam3d.pitch + (e.clientY - trascina.y) * 0.006));
+  trascina = {x:e.clientX, y:e.clientY};
+  disegna(cv3d, cameraCorrente3d());
+});
+const molla = () => { trascina = null; };
+cv3d.addEventListener("pointerup", molla);
+cv3d.addEventListener("pointercancel", molla);
+cv3d.addEventListener("wheel", e => {
+  if(modo3d === "fp") return;
+  e.preventDefault();
+  cam3d.dist = Math.max(4.2, Math.min(16, cam3d.dist + Math.sign(e.deltaY)*0.5));
+  disegna(cv3d, cameraCorrente3d());
+}, {passive:false});
+
+// --- ridisegno su misura e su tema ---
+if(window.ResizeObserver){
+  const ro = new ResizeObserver(() => tutto());
+  ro.observe(cvPlan); ro.observe(cvIso); ro.observe(cv3d);
+}else{
+  window.addEventListener("resize", tutto);
+}
+if(window.matchMedia){
+  const mq = window.matchMedia("(prefers-color-scheme: dark)");
+  const h = () => tutto();
+  if(mq.addEventListener) mq.addEventListener("change", h); else mq.addListener(h);
+}
+new MutationObserver(tutto).observe(document.documentElement, {attributes:true, attributeFilter:["data-theme"]});
+
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(tutto);
+tutto();
+
+})();
+</script>
