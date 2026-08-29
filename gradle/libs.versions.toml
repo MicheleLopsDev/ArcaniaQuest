@@ -1,0 +1,24 @@
+# Catalogo delle versioni: un posto solo dove aggiornarle.
+
+[versions]
+kotlin        = "2.4.10"
+agp           = "8.13.2"
+gdx           = "1.14.2"
+serializzaz   = "1.11.0"
+
+compileSdk    = "36"
+minSdk        = "26"
+targetSdk     = "36"
+
+[libraries]
+gdx                 = { module = "com.badlogicgames.gdx:gdx",                 version.ref = "gdx" }
+gdx-backend-lwjgl3  = { module = "com.badlogicgames.gdx:gdx-backend-lwjgl3",  version.ref = "gdx" }
+gdx-backend-android = { module = "com.badlogicgames.gdx:gdx-backend-android", version.ref = "gdx" }
+gdx-platform        = { module = "com.badlogicgames.gdx:gdx-platform",        version.ref = "gdx" }
+kotlinx-serializzazione-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serializzaz" }
+
+[plugins]
+kotlin-jvm           = { id = "org.jetbrains.kotlin.jvm",           version.ref = "kotlin" }
+kotlin-android       = { id = "org.jetbrains.kotlin.android",       version.ref = "kotlin" }
+kotlin-serializzaz   = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+android-application  = { id = "com.android.application",            version.ref = "agp" }

@@ -54,7 +54,9 @@ il formato è spiegato in [`doc/MODULI.md`](doc/MODULI.md).
 
 ## 3. La scelta tecnica
 
-**Kotlin + libGDX**, JDK 21, Gradle 8.11.
+**Kotlin + libGDX.** Kotlin 2.4.10, libGDX 1.14.2, Gradle 8.14.4, AGP
+8.13.2, bytecode Java 17. Android da **API 26** (Android 8) in su,
+compilato contro l'API 36.
 
 Le tre piattaforme sono un requisito, non un desiderio, e sono la ragione
 principale della scelta:
@@ -70,20 +72,50 @@ principale della scelta:
   qualunque altra dipendenza, e soprattutto **si può lasciare fuori** dal
   modulo che contiene le regole.
 
-Per i modelli si usa **glTF** (`gdx-gltf`), formato aperto e leggibile da
-qualunque strumento di modellazione.
+Per ora **non c'e' nessun modello importato**: la geometria si genera dal
+JSON. Quando servira' portare dentro pezzi modellati a mano — arredi,
+mostri — si usera' **glTF**, che e' aperto e lo legge qualunque
+programma di modellazione.
 
 ### I moduli del progetto
 
 ```
-:regole     Kotlin puro. Catalogo, generatore, stato della partita, regole.
+:regole     Kotlin puro. Catalogo, moduli, rotazioni, validatore.
             Zero dipendenze grafiche, zero Android: si prova con JUnit.
 :gioco      libGDX. Le mesh generate dai moduli, la telecamera a caselle,
-            l'interfaccia, l'input.
+            le luci, l'input.
 :desktop    Lanciatore LWJGL3 — Windows e Linux.
 :android    Lanciatore Android.
-:strumenti  Riga di comando ed editor per il catalogo dei moduli.
+strumenti/  Script per il catalogo: validatore e tavola di correzione.
+            Non e' ancora un modulo Gradle.
 ```
+
+Il progetto si apre in **Android Studio** come un normale progetto
+Gradle: sincronizza, e trovi i quattro moduli nel pannello. Le prove di
+`:regole` si lanciano dall'IDE come qualunque test JUnit.
+
+### Come si prova
+
+```
+./gradlew :regole:test          le regole, senza aprire niente
+./gradlew :desktop:run          il gioco su desktop
+./gradlew :android:assembleDebug  l'apk
+```
+
+Su desktop `:desktop:run` accetta l'id di un modulo e un'opzione per
+fotografarlo invece di aprirlo:
+
+```
+./gradlew :desktop:run --args="C45"
+./gradlew :desktop:run --args="S25 --scatto=vista.png"
+```
+
+Lo scatto disegna dodici fotogrammi, salva un PNG e chiude. Serve a
+controllare la resa senza doverla guardare: se una modifica rompe la
+geometria, si vede in un'immagine invece che in una sessione di gioco.
+
+Comandi: `↑ ↓` avanti e indietro, `← →` volta di 90°, `A D` passo
+laterale.
 
 La regola che tiene in piedi la separazione: **`:regole` non sa che esiste
 uno schermo.** Se una decisione di gioco ha bisogno di sapere quanti
@@ -126,8 +158,10 @@ riga nel `NOTICE`.
 ```
 content/moduli/   Il catalogo dei pezzi del dungeon.
 doc/              Documentazione. MODULI.md e' il formato dei pezzi.
-doc/mock/         I prototipi che hanno guidato le decisioni,
-                  navigabili nel browser.
+doc/mock/         I prototipi che hanno guidato le decisioni, e la
+                  tavola per correggere il catalogo. Si aprono nel browser.
+strumenti/        Validatore del catalogo e generatore della tavola.
+regole/ gioco/ desktop/ android/   I quattro moduli Gradle.
 LICENSE           GPL-3.0.
 ```
 
@@ -139,16 +173,25 @@ Fatto:
   `doc/mock/` ci sono la pianta, l'isometrico, il 3D prospettico e il
   prototipo giocabile in prima persona del modulo 25.
 - Il formato dei moduli è definito e validato.
-- 18 pezzi trascritti sui 42 previsti (6 iniziali su 6, 12 su 36 della
-  tavola d66).
+- Il catalogo e' completo come numeri: **42 moduli**, 6 iniziali e tutti
+  e 36 i tiri del d66.
+- Il progetto compila e gira su desktop, e l'apk si costruisce. Un
+  modulo si carica dal JSON, diventa geometria, e ci si cammina dentro a
+  caselle.
+- `:regole` ha le sue prove: catalogo, tabelle dei dadi, rotazioni.
 
 Da fare, nell'ordine:
 
-1. Completare il catalogo: mancano i moduli d66 dal 31 al 66, e le 18
-   trascrizioni esistenti vanno confrontate con le tavole stampate
-   (`verificato: false` su tutte, alcune sono letture incerte).
-2. Lo scheletro Gradle coi cinque moduli, e il primo eseguibile che apre
-   una finestra su desktop.
-3. Il generatore in `:regole`: pesca, ruota, incastra, rifiuta.
-4. La mesh generata dal JSON, e il modulo 25 che gira davvero nel motore.
-5. Il gruppo, la scheda dei personaggi, gli incontri.
+1. **Verificare le trascrizioni.** Tutti i moduli sono a
+   `verificato: false`: vengono da fotografie delle tavole e alcune
+   letture sono incerte. Si correggono con la tavola in
+   `doc/mock/tavola-moduli.html`.
+2. **Il generatore** in `:regole`: pesca, ruota, incastra, rifiuta. La
+   rotazione c'e' gia' ed e' provata; manca il piazzamento.
+3. **Piu' moduli insieme**: oggi se ne carica uno solo, e attraversare
+   una porta non porta da nessuna parte.
+4. **L'interfaccia**, che arriva da Michele.
+5. Il gruppo vero, la scheda dei personaggi, gli incontri.
+
+Quello che si vede adesso e' volumi grezzi senza texture, luce di torcia
+e nebbia. La resa e' quella decisa nei mock, ma non e' ancora vestita.

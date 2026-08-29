@@ -10,8 +10,8 @@
       "formazione": "fila",
       "agguato": true,
       "tesoro": false,
-      "arredi": false,
-      "luce": "solo torcia del gruppo",
+      "arredi": [],
+      "luceTorceAMuro": false,
       "riposo": false
     },
     "stanza": {
@@ -20,16 +20,16 @@
       "agguato": false,
       "tesoro": true,
       "arredi": ["scala", "altare", "fontana", "forziere", "statua"],
-      "luce": "puo' avere torce a muro",
-      "riposo": "se vuota e con le porte chiuse"
+      "luceTorceAMuro": true,
+      "riposo": true
     },
     "iniziale": {
-      "incontri": false,
+      "incontri": "nessuno",
       "formazione": "libera",
       "agguato": false,
       "tesoro": false,
       "arredi": ["scala"],
-      "luce": "puo' avere torce a muro",
+      "luceTorceAMuro": true,
       "riposo": true
     }
   },
