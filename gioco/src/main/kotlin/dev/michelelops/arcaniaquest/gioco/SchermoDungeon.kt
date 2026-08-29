@@ -35,7 +35,15 @@ class SchermoDungeon(
      * guardare a occhio: e' la prova che si puo' rifare uguale domani.
      */
     private val scattaDopo: Int = 0,
-    private val fileScatto: String = "scatto.png"
+    private val fileScatto: String = "scatto.png",
+    /**
+     * Telecamera a picco sul modulo, senza buio ne' nebbia. Non e' una
+     * modalita' di gioco: e' il modo per vedere se alla mesh manca un
+     * pezzo, cosa che da dentro non si nota mai.
+     */
+    private val dallAlto: Boolean = false,
+    /** Casella e verso da cui guardare, per rifare uno scatto uguale. */
+    private val posa: Triple<Int, Int, dev.michelelops.arcaniaquest.regole.Lato>? = null
 ) : ApplicationAdapter() {
 
     private var fotogrammi = 0
@@ -56,22 +64,28 @@ class SchermoDungeon(
     override fun create() {
         catalogo = Catalogo.daJson(Gdx.files.internal("moduli/catalogo.json").readString("UTF-8"))
         modulo = catalogo[moduloIniziale]
-        gruppo = Gruppo.dallaPartenza(modulo)
+        gruppo = posa?.let { Gruppo(modulo, it.first, it.second, it.third) }
+            ?: Gruppo.dallaPartenza(modulo)
 
         camera = PerspectiveCamera(64f, Gdx.graphics.width.toFloat(), Gdx.graphics.height.toFloat()).apply {
             near = 0.15f
-            far = Misure.FONDO_BUIO
+            far = if (dallAlto) 400f else Misure.FONDO_BUIO
         }
         batch = ModelBatch()
 
         ambiente = Environment().apply {
-            set(ColorAttribute(ColorAttribute.AmbientLight, 0.17f, 0.18f, 0.22f, 1f))
-            set(ColorAttribute(ColorAttribute.Fog, 0.015f, 0.018f, 0.024f, 1f))
-            add(DirectionalLight().set(0.13f, 0.14f, 0.17f, -0.4f, -0.9f, -0.25f))
-            add(torciaDelGruppo)
+            if (dallAlto) {
+                set(ColorAttribute(ColorAttribute.AmbientLight, 0.55f, 0.56f, 0.58f, 1f))
+                add(DirectionalLight().set(0.5f, 0.5f, 0.5f, -0.4f, -0.9f, -0.25f))
+            } else {
+                set(ColorAttribute(ColorAttribute.AmbientLight, 0.17f, 0.18f, 0.22f, 1f))
+                set(ColorAttribute(ColorAttribute.Fog, 0.015f, 0.018f, 0.024f, 1f))
+                add(DirectionalLight().set(0.13f, 0.14f, 0.17f, -0.4f, -0.9f, -0.25f))
+                add(torciaDelGruppo)
+            }
         }
         // Le torce a muro dichiarate nel modulo.
-        for (a in modulo.arredi.filter { it.tipo == "torcia" }) {
+        for (a in if (dallAlto) emptyList() else modulo.arredi.filter { it.tipo == "torcia" }) {
             ambiente.add(PointLight().set(
                 Color(1f, 0.62f, 0.28f, 1f),
                 (a.x + 0.5f) * Misure.CASELLA, Misure.ALTEZZA_MURO * 0.62f, (a.z + 0.5f) * Misure.CASELLA,
@@ -94,21 +108,7 @@ class SchermoDungeon(
     }
 
     override fun render() {
-        leggiComandi()
-        gruppo.avanza(Gdx.graphics.deltaTime)
-
-        val c = Misure.CASELLA
-        val px = (gruppo.mostraX + 0.5f) * c
-        val pz = (gruppo.mostraZ + 0.5f) * c
-        val a = gruppo.mostraAngolo
-
-        camera.position.set(px, Misure.ALTEZZA_OCCHI, pz)
-        camera.direction.set(sin(a), 0f, cos(a))
-        camera.up.set(0f, 1f, 0f)
-        camera.update()
-
-        // Il gruppo si porta dietro la torcia: senza, il buio sarebbe totale.
-        torciaDelGruppo.set(Color(1f, 0.68f, 0.36f, 1f), px, Misure.ALTEZZA_OCCHI + 0.35f, pz, Misure.FORZA_TORCIA_GRUPPO)
+        if (dallAlto) inquadraDallAlto() else inquadraDalGruppo()
 
         Gdx.gl.glClearColor(0.012f, 0.014f, 0.018f, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT)
@@ -131,6 +131,36 @@ class SchermoDungeon(
             Gdx.app.log("arcania", "scatto salvato in " + fileScatto)
             Gdx.app.exit()
         }
+    }
+
+    /** A picco sul modulo, tutto dentro l'inquadratura. */
+    private fun inquadraDallAlto() {
+        val c = Misure.CASELLA
+        val cx = modulo.larghezza * c / 2f
+        val cz = modulo.profondita * c / 2f
+        val quanto = maxOf(modulo.larghezza, modulo.profondita) * c
+        camera.position.set(cx, quanto * 1.25f, cz + 0.001f)
+        camera.direction.set(0f, -1f, -0.0001f).nor()
+        camera.up.set(0f, 0f, -1f)
+        camera.update()
+    }
+
+    private fun inquadraDalGruppo() {
+        leggiComandi()
+        gruppo.avanza(Gdx.graphics.deltaTime)
+
+        val c = Misure.CASELLA
+        val px = (gruppo.mostraX + 0.5f) * c
+        val pz = (gruppo.mostraZ + 0.5f) * c
+        val a = gruppo.mostraAngolo
+
+        camera.position.set(px, Misure.ALTEZZA_OCCHI, pz)
+        camera.direction.set(sin(a), 0f, cos(a))
+        camera.up.set(0f, 1f, 0f)
+        camera.update()
+
+        // Il gruppo si porta dietro la torcia: senza, il buio sarebbe totale.
+        torciaDelGruppo.set(Color(1f, 0.68f, 0.36f, 1f), px, Misure.ALTEZZA_OCCHI + 0.35f, pz, Misure.FORZA_TORCIA_GRUPPO)
     }
 
     /**

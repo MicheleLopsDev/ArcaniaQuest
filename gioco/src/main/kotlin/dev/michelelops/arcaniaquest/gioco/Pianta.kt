@@ -130,10 +130,20 @@ object Pianta {
      */
     fun varchi(m: Modulo): List<Riquadro> = m.connettori.map { varco(it) }
 
+    /**
+     * Un passaggio aperto e' largo quanto la casella: di la' si cammina,
+     * e la stanza deve proseguire. Una porta invece e' una porta — un
+     * metro e mezzo, non tre. Fare i due casi uguali dava battenti larghi
+     * come un portone di garage.
+     */
+    const val LARGO_PASSAGGIO = 0.47f
+    const val LARGO_PORTA = 0.26f
+
     fun varco(k: Connettore): Riquadro {
         val x = k.x.toFloat(); val z = k.z.toFloat()
         val s = 0.3f      // quanto il varco sborda oltre il muro
-        val l = 0.06f     // quanto lo si stringe ai lati, per non mangiare gli spigoli
+        val mezzo = if (k.porta) LARGO_PORTA else LARGO_PASSAGGIO
+        val l = 0.5f - mezzo   // quanta parete resta ai lati del varco
         return when (k.lato) {
             dev.michelelops.arcaniaquest.regole.Lato.NORD ->
                 Riquadro(x + l, z - s, x + 1f - l, z + s)

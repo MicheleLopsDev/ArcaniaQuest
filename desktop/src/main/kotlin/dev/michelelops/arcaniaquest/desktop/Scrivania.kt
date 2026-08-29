@@ -3,6 +3,7 @@ package dev.michelelops.arcaniaquest.desktop
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration
 import dev.michelelops.arcaniaquest.gioco.SchermoDungeon
+import dev.michelelops.arcaniaquest.regole.Lato
 
 /**
  * Il lanciatore per Windows e Linux. Lo stesso backend copre entrambi:
@@ -22,7 +23,19 @@ fun main(args: Array<String>) {
         useVsync(true)
         setBackBufferConfig(8, 8, 8, 8, 16, 0, 0)
     }
-    val schermo = if (scatto != null) SchermoDungeon(modulo, scattaDopo = 12, fileScatto = scatto)
-                  else SchermoDungeon(modulo)
+    val dallAlto = args.any { it == "--alto" }
+    // --posa=x,z,verso mette il gruppo in una casella precisa: serve a
+    // rifare due volte lo stesso scatto e confrontarli.
+    val posa = args.firstOrNull { it.startsWith("--posa=") }
+        ?.removePrefix("--posa=")?.split(",")
+        ?.let { p ->
+            Triple(
+                p[0].trim().toInt(),
+                p[1].trim().toInt(),
+                Lato.valueOf(p.getOrElse(2) { "nord" }.trim().uppercase())
+            )
+        }
+    val schermo = if (scatto != null) SchermoDungeon(modulo, 12, scatto, dallAlto, posa)
+                  else SchermoDungeon(modulo, dallAlto = dallAlto, posa = posa)
     Lwjgl3Application(schermo, config)
 }

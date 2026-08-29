@@ -129,7 +129,14 @@ fotografarlo invece di aprirlo:
 ```
 ./gradlew :desktop:run --args="C45"
 ./gradlew :desktop:run --args="S25 --scatto=vista.png"
+./gradlew :desktop:run --args="S25 --alto --scatto=pianta.png"
+./gradlew :desktop:run --args="S25 --posa=1,2,ovest --scatto=porta.png"
 ```
+
+`--alto` guarda il modulo a picco, senza buio: e' il modo per vedere se
+alla mesh manca un pezzo, cosa che da dentro non si nota mai. `--posa`
+mette il gruppo in una casella e un verso precisi, cosi' due scatti
+fatti a giorni di distanza si possono confrontare.
 
 Lo scatto sta solo qui e non fra le configurazioni di Android Studio: le
 virgolette attorno a due argomenti separati da uno spazio non

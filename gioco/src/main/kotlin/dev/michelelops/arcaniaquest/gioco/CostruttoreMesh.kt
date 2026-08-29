@@ -27,6 +27,7 @@ object CostruttoreMesh {
     private val PIETRA_CIMA = Color(0.30f, 0.30f, 0.29f, 1f)
     private val PIETRA_VOLTA = Color(0.38f, 0.37f, 0.35f, 1f)
     private val LEGNO = Color(0.40f, 0.25f, 0.15f, 1f)
+    private val FERRO = Color(0.20f, 0.20f, 0.21f, 1f)
 
     /** Un tratto di muro gia' misurato: due estremi e la normale in fuori. */
     private class Tratto(
@@ -34,6 +35,9 @@ object CostruttoreMesh {
         val bx: Float, val bz: Float,
         val nx: Float, val nz: Float
     )
+
+    /** Il taglio in testa a un muro: chiude lo spessore dove il muro finisce. */
+    private class Stipite(val x: Float, val z: Float, val nx: Float, val nz: Float)
 
     fun costruisci(m: Modulo): Model {
         val c = Misure.CASELLA
@@ -46,27 +50,47 @@ object CostruttoreMesh {
         // I contorni si calcolano una volta sola: servono a piu' passate.
         val contorni = forme.map { Pianta.contorno(it) }
         val tratti = mutableListOf<Tratto>()
+        val stipiti = mutableListOf<Stipite>()
+
         for ((i, poly) in contorni.withIndex()) {
             val b = Pianta.baricentro(poly)
+
+            // Prima si decide segmento per segmento se il muro c'e'.
+            val tenuto = BooleanArray(poly.size)
+            val normali = Array(poly.size) { floatArrayOf(0f, 0f) }
             for (k in poly.indices) {
                 val a = poly[k]
                 val d = poly[(k + 1) % poly.size]
                 val mx = (a[0] + d[0]) / 2f
                 val mz = (a[1] + d[1]) / 2f
 
-                // dove c'e' un connettore non c'e' muro
-                if (varchi.any { it.contiene(mx, mz) }) continue
-                // e nemmeno dove due forme dello stesso modulo si toccano:
-                // li' sarebbe un divisorio dentro la stessa stanza
-                if (forme.withIndex().any { (j, g) -> j != i && Pianta.dentro(g, mx, mz) }) continue
-
                 var nx = d[1] - a[1]
                 var nz = -(d[0] - a[0])
                 val l = kotlin.math.hypot(nx, nz).takeIf { it > 1e-6f } ?: 1f
                 nx /= l; nz /= l
                 if ((mx - b[0]) * nx + (mz - b[1]) * nz < 0f) { nx = -nx; nz = -nz }
+                normali[k] = floatArrayOf(nx, nz)
 
-                tratti += Tratto(a[0] * c, a[1] * c, d[0] * c, d[1] * c, nx, nz)
+                // dove c'e' un connettore non c'e' muro; e nemmeno dove due
+                // forme dello stesso modulo si toccano, che li' sarebbe un
+                // divisorio dentro la stessa stanza
+                val varco = varchi.any { it.contiene(mx, mz) }
+                val confine = forme.withIndex().any { (j, g) -> j != i && Pianta.dentro(g, mx, mz) }
+                tenuto[k] = !varco && !confine
+
+                if (tenuto[k]) tratti += Tratto(a[0] * c, a[1] * c, d[0] * c, d[1] * c, nx, nz)
+            }
+
+            // Poi si chiudono i tagli. Dove il muro finisce, il suo spessore
+            // resterebbe aperto: si vedrebbe il vuoto attraverso i settanta
+            // centimetri fra faccia interna ed esterna. E' lo stipite, e da
+            // dentro il gioco e' proprio la fessura nera accanto alle porte.
+            for (k in poly.indices) {
+                val succ = (k + 1) % poly.size
+                if (tenuto[k] == tenuto[succ]) continue
+                val v = poly[succ]
+                val n = if (tenuto[k]) normali[k] else normali[succ]
+                stipiti += Stipite(v[0] * c, v[1] * c, n[0], n[1])
             }
         }
 
@@ -126,7 +150,19 @@ object CostruttoreMesh {
                 Vector3(s.nx, 0f, s.nz))
         }
 
-        // 4. cime dei muri, per quando si guardera' dall'alto
+        // 4. stipiti: la testa dei muri tagliati
+        val sti = mb.part("stipiti", GL20.GL_TRIANGLES, attributi, materiale(PIETRA_MURO))
+        for (p in stipiti) {
+            val ex = p.nx * t; val ez = p.nz * t
+            // normale lungo il muro: quale dei due versi conta poco,
+            // le facce non si scartano
+            val lungo = Vector3(-p.nz, 0f, p.nx)
+            quadrato(sti,
+                Vector3(p.x, 0f, p.z), Vector3(p.x + ex, 0f, p.z + ez),
+                Vector3(p.x + ex, h, p.z + ez), Vector3(p.x, h, p.z), lungo)
+        }
+
+        // 5. cime dei muri, per quando si guardera' dall'alto
         val cim = mb.part("cime", GL20.GL_TRIANGLES, attributi, materiale(PIETRA_CIMA))
         for (s in tratti) {
             val ex = s.nx * t; val ez = s.nz * t
@@ -135,19 +171,80 @@ object CostruttoreMesh {
                 Vector3(s.bx + ex, h, s.bz + ez), Vector3(s.ax + ex, h, s.az + ez), su)
         }
 
-        // 5. porte: un battente nel varco, cosi' si vede che di la' non si passa
+        // 6. architravi: il varco toglie il muro per tutta l'altezza, ma la
+        //    porta e' alta due metri e mezzo. Senza architrave sopra ogni
+        //    porta resta un buco che da' sul nulla.
+        val arc = mb.part("architravi", GL20.GL_TRIANGLES, attributi, materiale(PIETRA_MURO))
+        for (k in m.connettori.filter { it.porta }) {
+            val v = Pianta.varco(k)
+            val lungoX = k.lato == dev.michelelops.arcaniaquest.regole.Lato.NORD ||
+                         k.lato == dev.michelelops.arcaniaquest.regole.Lato.SUD
+            val (cx, cz) = centroPorta(k, v, c)
+            val larg = (if (lungoX) LARGHEZZA_PORTA else SPESSORE_PORTA) * c
+            val prof = (if (lungoX) SPESSORE_PORTA else LARGHEZZA_PORTA) * c
+            val alto = h - ALTEZZA_PORTA
+            // L'architrave e' muratura che tappa il varco sopra la porta:
+            // largo quanto il varco e spesso quanto il muro, non un
+            // pannello appoggiato che sporge e si vede di sbieco.
+            val largoVarco = Pianta.LARGO_PORTA * 2f + 0.06f
+            val spessoMuro = Misure.SPESSORE_MURO / c
+            val largArc = (if (lungoX) largoVarco else spessoMuro) * c
+            val profArc = (if (lungoX) spessoMuro else largoVarco) * c
+            BoxShapeBuilder.build(arc, cx, ALTEZZA_PORTA + alto / 2f, cz, largArc, alto, profArc)
+        }
+
+        // 7. porte: un battente nel varco, cosi' si vede che di la' non si passa
         val por = mb.part("porte", GL20.GL_TRIANGLES, attributi, materiale(LEGNO))
         for (k in m.connettori.filter { it.porta }) {
-            val r = Pianta.varco(k)
-            val cx = (r.x0 + r.x1) / 2f * c
-            val cz = (r.z0 + r.z1) / 2f * c
-            val orizzontale = (r.x1 - r.x0) > (r.z1 - r.z0)
-            val larg = (if (orizzontale) (r.x1 - r.x0) else 0.24f) * c
-            val prof = (if (orizzontale) 0.24f else (r.z1 - r.z0)) * c
-            BoxShapeBuilder.build(por, cx, h * 0.42f, cz, larg * 0.92f, h * 0.84f, prof * 0.92f)
+            val v = Pianta.varco(k)
+            val lungoX = k.lato == dev.michelelops.arcaniaquest.regole.Lato.NORD ||
+                         k.lato == dev.michelelops.arcaniaquest.regole.Lato.SUD
+            val (cx, cz) = centroPorta(k, v, c)
+            val larg = (if (lungoX) LARGHEZZA_PORTA else SPESSORE_PORTA) * c
+            val prof = (if (lungoX) SPESSORE_PORTA else LARGHEZZA_PORTA) * c
+            BoxShapeBuilder.build(por, cx, ALTEZZA_PORTA / 2f, cz, larg, ALTEZZA_PORTA, prof)
+        }
+
+        // 8. le bande di ferro: due strisce bastano a far leggere il
+        //    battente come una porta invece che come un pannello marrone
+        val fer = mb.part("ferramenta", GL20.GL_TRIANGLES, attributi, materiale(FERRO))
+        for (k in m.connettori.filter { it.porta }) {
+            val v = Pianta.varco(k)
+            val lungoX = k.lato == dev.michelelops.arcaniaquest.regole.Lato.NORD ||
+                         k.lato == dev.michelelops.arcaniaquest.regole.Lato.SUD
+            val (cx, cz) = centroPorta(k, v, c)
+            val larg = (if (lungoX) LARGHEZZA_PORTA * 0.9f else SPESSORE_PORTA + 0.03f) * c
+            val prof = (if (lungoX) SPESSORE_PORTA + 0.03f else LARGHEZZA_PORTA * 0.9f) * c
+            for (y in floatArrayOf(ALTEZZA_PORTA * 0.24f, ALTEZZA_PORTA * 0.76f)) {
+                BoxShapeBuilder.build(fer, cx, y, cz, larg, 0.16f, prof)
+            }
         }
 
         return mb.end()
+    }
+
+    /**
+     * Il battente e' un filo piu' largo del varco, non piu' stretto: se
+     * fosse piu' stretto resterebbero due fessure ai lati da cui si vede
+     * il vuoto.
+     */
+    private const val LARGHEZZA_PORTA = Pianta.LARGO_PORTA * 2f + 0.04f
+    private const val SPESSORE_PORTA = 0.18f
+    private const val ALTEZZA_PORTA = 2.1f
+
+    /**
+     * Il centro del battente, spostato dentro lo spessore del muro invece
+     * che sul filo: una porta a meta' fuori dal muro si vede subito.
+     */
+    private fun centroPorta(
+        k: dev.michelelops.arcaniaquest.regole.Connettore,
+        v: Riquadro,
+        c: Float
+    ): Pair<Float, Float> {
+        val fuori = Misure.SPESSORE_MURO / c / 2f
+        val cx = (v.x0 + v.x1) / 2f + k.lato.dx * fuori
+        val cz = (v.z0 + v.z1) / 2f + k.lato.dz * fuori
+        return (cx * c) to (cz * c)
     }
 
     /**
