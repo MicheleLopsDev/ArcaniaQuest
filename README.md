@@ -145,6 +145,10 @@ fotografarlo invece di aprirlo:
 ./gradlew :desktop:run --args="--finestra=460x900"
 ```
 
+`--cerca=S34,S36` non apre niente: gira i semi finche' non ne trova uno
+che contiene tutti i moduli chiesti, e li stampa con l'elenco dei pezzi.
+Serve a ritrovare la partita in cui c'e' quello che si vuole guardare.
+
 `--finestra=460x900` prova la disposizione da telefono senza tirare
 fuori il telefono. `--mappa`, `--tuttoscoperto` e `--porteaperte` sono
 scorciatoie per fotografare stati che a piedi ci vorrebbe un quarto
@@ -201,6 +205,10 @@ Due cose del bozzetto le ho cambiate apposta:
   di raccontare un guaio invece di inseguirlo.
 
 ### Il seme
+
+Si scrive **dentro il gioco**: `INVIO` apre il riquadro, si batte il seme,
+`INVIO` conferma e il sotterraneo si rimonta. `ESC` annulla. Mentre si
+scrive il gruppo non si muove: le lettere sono lettere, non comandi.
 
 Ogni partita nasce da un **seme**, e lo stesso seme rifa' lo stesso
 sotterraneo casella per casella. Serve a rigiocare una partita andata

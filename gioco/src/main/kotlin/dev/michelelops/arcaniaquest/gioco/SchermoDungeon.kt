@@ -3,6 +3,7 @@ package dev.michelelops.arcaniaquest.gioco
 import com.badlogic.gdx.ApplicationAdapter
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.Input
+import com.badlogic.gdx.InputAdapter
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.PerspectiveCamera
@@ -48,7 +49,9 @@ data class Avvio(
     /** Parte con la mappa grande gia' aperta. */
     val mappaAperta: Boolean = false,
     /** Segna come gia' visto tutto il sotterraneo: serve solo a fotografarlo. */
-    val tuttoScoperto: Boolean = false
+    val tuttoScoperto: Boolean = false,
+    /** Parte col riquadro del seme gia' aperto, per fotografarlo. */
+    val chiediIlSeme: String? = null
 )
 
 /**
@@ -71,6 +74,8 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
     private var telaio = Telaio(1f, 1f)
     private var mappaGrande = false
     private var messaggio = ""
+    /** Il seme che si sta battendo. null vuol dire che non si sta scrivendo. */
+    private var semeScritto: String? = null
 
     /** Un modello e la sua istanza per ogni pezzo, cosi' si rifa' solo quello che cambia. */
     private val modelli = LinkedHashMap<String, Model>()
@@ -92,6 +97,8 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
         batch = ModelBatch()
         if (!avvio.dallAlto) cruscotto = Cruscotto()
         mappaGrande = avvio.mappaAperta
+        semeScritto = avvio.chiediIlSeme
+        Gdx.input.inputProcessor = tastiera()
 
         nuovaPartita(avvio.sorte)
     }
@@ -239,6 +246,51 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
         if (avvio.scattaDopo > 0 && fotogrammi >= avvio.scattaDopo) scatta()
     }
 
+    /**
+     * La tastiera per scrivere un seme.
+     *
+     * Si legge dai codici dei tasti e non dai caratteri: un seme sta in
+     * base 36, cioe' lettere e cifre, e cosi' non c'e' da litigare con
+     * accenti e disposizioni di tastiera diverse. Mentre si scrive, la
+     * tastiera si mangia tutto: il gruppo non deve camminare perche' hai
+     * battuto una D.
+     */
+    private fun tastiera() = object : InputAdapter() {
+        override fun keyDown(keycode: Int): Boolean {
+            val ora = semeScritto
+            if (ora == null) {
+                if (keycode != Input.Keys.ENTER) return false
+                semeScritto = ""
+                messaggio = "Scrivi un seme e premi INVIO. ESC annulla."
+                return true
+            }
+            when (keycode) {
+                Input.Keys.ENTER -> {
+                    val testo = ora.trim()
+                    semeScritto = null
+                    if (testo.isEmpty()) {
+                        messaggio = ""
+                    } else {
+                        nuovaPartita(Sorte.leggi(testo))
+                        messaggio = "Sotterraneo del seme ${sorte.semeScritto()}."
+                    }
+                }
+                Input.Keys.ESCAPE -> {
+                    semeScritto = null
+                    messaggio = ""
+                }
+                Input.Keys.BACKSPACE -> semeScritto = ora.dropLast(1)
+                Input.Keys.SPACE -> if (ora.length < 24) semeScritto = "$ora "
+                in Input.Keys.A..Input.Keys.Z ->
+                    if (ora.length < 24) semeScritto = ora + ('A' + (keycode - Input.Keys.A))
+                in Input.Keys.NUM_0..Input.Keys.NUM_9 ->
+                    if (ora.length < 24) semeScritto = ora + ('0' + (keycode - Input.Keys.NUM_0))
+                else -> {}
+            }
+            return true
+        }
+    }
+
     /** Il buco della cornice, dove va disegnata la scena. */
     private fun dentroLaVista(): Riq {
         val v = telaio.vista
@@ -256,7 +308,9 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
             stanza = p?.let { "${it.modulo.id} ${it.modulo.nome}" } ?: "fuori dal sotterraneo",
             famiglia = p?.modulo?.famiglia?.name?.lowercase() ?: "-",
             mappaGrande = mappaGrande,
-            messaggio = messaggio
+            messaggio = messaggio,
+            semeInScrittura = semeScritto,
+            unSoloModulo = avvio.modulo != null
         )
     }
 
@@ -316,6 +370,10 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
      * Aprire e rigenerare invece vanno alla pressione, non alla tenuta.
      */
     private fun leggiComandi() {
+        // Mentre si scrive un seme il gruppo non si muove: le lettere sono
+        // lettere, non comandi.
+        if (semeScritto != null) return
+
         if (Gdx.input.isKeyJustPressed(Input.Keys.F1)) {
             cruscotto?.let { it.visibile = !it.visibile }
         }

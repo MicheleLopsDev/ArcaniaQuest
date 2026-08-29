@@ -29,7 +29,11 @@ class StatoHud(
     val stanza: String,
     val famiglia: String,
     val mappaGrande: Boolean,
-    val messaggio: String
+    val messaggio: String,
+    /** Il seme che si sta battendo, o null se non si sta scrivendo. */
+    val semeInScrittura: String? = null,
+    /** In modalita' guarda-un-modulo il seme non genera niente: e' rumore. */
+    val unSoloModulo: Boolean = false
 )
 
 /**
@@ -92,13 +96,16 @@ class Cruscotto : Disposable {
         // Nella barra della vista, che e' quella che si guarda sempre,
         // finiscono le tre cose che servono a raccontare dove si e': la
         // stanza, la casella col verso, e il seme per rifare la partita.
+        val coda = if (stato.unSoloModulo) "" else "     seme ${stato.seme}"
         cornice(t.vista, "VISTA IN PRIMA PERSONA",
-            "${stato.stanza}     ${stato.x}, ${stato.z}  ${stato.verso.name.lowercase()}     seme ${stato.seme}")
+            "${stato.stanza}     ${stato.x}, ${stato.z}  ${stato.verso.name.lowercase()}$coda")
         zaino(t.zaino)
         mappa(t.mappa, stato, false)
         gruppo(t.gruppo)
         diario(t.diario, stato)
         comandi(t.comandi, stato)
+
+        stato.semeInScrittura?.let { chiediSeme(t, it) }
 
         if (stato.mappaGrande) {
             rett(Riq(0f, 0f, t.larghezza, t.altezza), Color(0f, 0f, 0f, 0.72f))
@@ -107,6 +114,21 @@ class Cruscotto : Disposable {
         }
 
         batch.end()
+    }
+
+    /** Il riquadro in cui si batte un seme. */
+    private fun chiediSeme(t: Telaio, battuto: String) {
+        val v = t.vista
+        val alto = font.lineHeight * 3.4f
+        val largo = minOf(v.w * 0.8f, 460f * s)
+        val r = Riq(v.cx - largo / 2f, v.cy - alto / 2f, largo, alto)
+        rett(r, Color(0.02f, 0.022f, 0.026f, 0.96f))
+        bordo(r)
+        testo("SEME", r.x + pad() * 2f, r.y1 - pad() * 1.6f, spenta, 0.7f)
+        // il cursore lampeggia: dice che la tastiera sta ascoltando
+        val cursore = if ((System.currentTimeMillis() / 450) % 2 == 0L) "_" else " "
+        testo(battuto + cursore, r.x + pad() * 2f, r.cy + font.lineHeight * 0.2f, ambra, 1.15f)
+        testo("INVIO conferma     ESC annulla", r.x + pad() * 2f, r.y + pad() * 2.2f, spenta, 0.62f)
     }
 
     // ---------- pannelli ----------
