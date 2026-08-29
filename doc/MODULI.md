@@ -1,11 +1,11 @@
 # I moduli del dungeon
 
 Il dungeon non è disegnato: è **pescato e incastrato**. Ogni partita mette
-insieme pezzi presi da un catalogo, e i pezzi sono di due famiglie che nel
+insieme pezzi presi da un catalogo, e i pezzi sono di tre famiglie che nel
 gioco valgono cose diverse.
 
-Sorgente: le tavole dei moduli del gioco da tavolo (pag. 191 «Modulo
-Iniziale», pag. 192 «Moduli»). Il catalogo vive in
+Sorgente: le tavole dei moduli del gioco da tavolo — pag. 191 «Modulo
+Iniziale» (d6) e pagg. 192-194 «Moduli» (d66). Il catalogo vive in
 `content/moduli/catalogo.json`.
 
 ---
@@ -70,20 +70,34 @@ esplorare. Vanno bilanciate giocando, non decise a tavolino.
 - **`caselle`** — una riga per ogni `z` (da nord a sud), un carattere per
   ogni `x` (da ovest a est). `1` si cammina, `0` è roccia viva. È l'unica
   cosa che serve al movimento e alla collisione: nessuna fisica.
-- **`pianta`** — le forme da cui si genera la mesh. `rettangolo` e
-  `rettangoloArrotondato` bastano per tutte le tavole viste finora. Il
-  pavimento è un poligono, non un mosaico di caselle: è così che una sala
-  ovale sta dentro una griglia quadrata senza sembrare quadrata.
+- **`pianta`** — *facoltativo*. Le forme da cui si genera la mesh. Se
+  manca, la pianta si ricava dalle `caselle`: è il caso della quasi
+  totalità dei moduli, che sono fatti di angoli retti. Si scrive a mano
+  solo quando la stanza **non** è squadrata — la Sala Ovale (S25) e la
+  Sala a Mandorla (S34) sono le uniche due finora. Il pavimento infatti è
+  un poligono, non un mosaico di caselle: è così che una sala ovale sta
+  dentro una griglia quadrata senza sembrare quadrata.
 - **`connettori`** — dove il modulo si attacca. `cella` è la casella
   **interna** al modulo, `lato` è il bordo di quella casella che si apre
   verso fuori. `porta: true` mette un battente; `false` è un'apertura
   vuota.
+
+  Attenzione: un connettore **non sta per forza sul bordo del rettangolo
+  d'ingombro**. Sta dove il modulo si apre verso l'esterno, e in un pezzo
+  a L quel punto può cadere in mezzo al rettangolo. La regola vera è: la
+  casella di là dal `lato` dev'essere roccia o fuori dal modulo. Per il
+  generatore non cambia niente, perché incastra caselle, non rettangoli.
 - **`verificato`** — `false` finché un occhio umano non ha confrontato il
   modulo con la tavola stampata. Serve: i moduli sono stati trascritti da
   fotografie, e alcune letture sono incerte.
 
-I moduli `iniziale` hanno in più un connettore `"tipo": "ingresso"`: è la
-scala da cui entra il gruppo, e **non** si attacca a nessun altro modulo.
+I moduli `iniziale` hanno in più un campo `partenza`: la casella da cui
+entra il gruppo e il verso in cui guarda all'inizio. Non è un connettore —
+lì c'è la scala da cui si scende, e non ci si attacca nessun altro modulo.
+
+```json
+"partenza": { "cella": [3, 1], "verso": "nord" }
+```
 
 ---
 
@@ -110,12 +124,23 @@ anello per non costringere a tornare sempre sui propri passi.
 
 ## 4. Stato del catalogo
 
-Trascritti dalle due tavole ricevute finora: **6 iniziali** (d6) e **12
-moduli** d66 (11–16, 21–26). La tavola d66 completa ne prevede 36: mancano
-i numeri da 31 a 66.
+**Completo come numeri: 42 moduli.** 6 iniziali (d6) e tutti e 36 quelli
+della tavola d66 — 13 corridoi e 23 stanze.
 
-Tutti i moduli sono a `"verificato": false`. La trascrizione viene da
-fotografie delle tavole e va confrontata con l'originale prima di
-considerarla buona — soprattutto il numero esatto di caselle e la
-posizione dei connettori, che sulle immagini piccole sono la cosa più
-facile da sbagliare.
+**Non completo come qualità: tutti a `"verificato": false`.** La
+trascrizione viene da fotografie delle tavole stampate, e il numero
+esatto di caselle e la posizione dei connettori sono la cosa più facile
+da sbagliare su un'immagine piccola. Finché un modulo non è confrontato
+con l'originale, il suo dato è un'ipotesi.
+
+Il controllo formale invece è automatico:
+
+```
+python strumenti/valida_catalogo.py
+```
+
+Verifica che le righe corrispondano alla profondità, le colonne alla
+larghezza, che i connettori stiano su una casella calpestabile e si
+aprano davvero verso l'esterno, e che nessun tiro di dado sia doppio o
+manchi. Non può dirti se il modulo somiglia alla tavola: quello lo può
+fare solo un occhio.
