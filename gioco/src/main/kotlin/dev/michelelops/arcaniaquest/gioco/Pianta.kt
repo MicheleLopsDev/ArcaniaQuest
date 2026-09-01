@@ -2,6 +2,7 @@ package dev.michelelops.arcaniaquest.gioco
 
 import dev.michelelops.arcaniaquest.regole.Connettore
 import dev.michelelops.arcaniaquest.regole.Forma
+import dev.michelelops.arcaniaquest.regole.Lato
 import dev.michelelops.arcaniaquest.regole.Modulo
 import kotlin.math.PI
 import kotlin.math.cos
@@ -60,25 +61,37 @@ object Pianta {
         return suddividi(punti, Misure.PASSO_CONTORNO)
     }
 
+    /** Il centro di uno spigolo arrotondato e l'arco che gli gira attorno. */
+    private class Spigolo(val cx: Float, val cz: Float, val da: Float, val a: Float)
+
+    /**
+     * Il contorno di un rettangolo con gli spigoli arrotondati: i quattro
+     * archi in fila, ognuno spezzato in [FETTE_DI_SPIGOLO] tratti.
+     */
     private fun arrotondato(x: Float, z: Float, w: Float, d: Float, r: Float): List<FloatArray> {
-        val fette = 9
-        val angoli = listOf(
-            floatArrayOf(x + w - r, z + r, (-PI / 2).toFloat(), 0f),
-            floatArrayOf(x + w - r, z + d - r, 0f, (PI / 2).toFloat()),
-            floatArrayOf(x + r, z + d - r, (PI / 2).toFloat(), PI.toFloat()),
-            floatArrayOf(x + r, z + r, PI.toFloat(), (PI * 1.5).toFloat())
+        val mezzoGiro = PI.toFloat()
+        val quartoDiGiro = mezzoGiro / 2f
+        val spigoli = listOf(
+            Spigolo(x + w - r, z + r, -quartoDiGiro, 0f),
+            Spigolo(x + w - r, z + d - r, 0f, quartoDiGiro),
+            Spigolo(x + r, z + d - r, quartoDiGiro, mezzoGiro),
+            Spigolo(x + r, z + r, mezzoGiro, mezzoGiro + quartoDiGiro)
         )
         val punti = mutableListOf<FloatArray>()
-        for (a in angoli) {
-            for (i in 0..fette) {
-                val ang = a[2] + (a[3] - a[2]) * i / fette
-                val p = floatArrayOf(a[0] + cos(ang) * r, a[1] + sin(ang) * r)
-                val u = punti.lastOrNull()
-                if (u == null || hypot(u[0] - p[0], u[1] - p[1]) > 1e-4f) punti += p
+        for (s in spigoli) {
+            for (i in 0..FETTE_DI_SPIGOLO) {
+                val angolo = s.da + (s.a - s.da) * i / FETTE_DI_SPIGOLO
+                val p = floatArrayOf(s.cx + cos(angolo) * r, s.cz + sin(angolo) * r)
+                // il primo punto di un arco cade sull'ultimo del precedente:
+                // ripeterlo lascerebbe un triangolo di area zero nella mesh
+                val ultimo = punti.lastOrNull()
+                if (ultimo == null || hypot(ultimo[0] - p[0], ultimo[1] - p[1]) > 1e-4f) punti += p
             }
         }
         return punti
     }
+
+    private const val FETTE_DI_SPIGOLO = 9
 
     /**
      * Spezza ogni lato in tratti corti. Serve perche' i varchi si
@@ -147,13 +160,13 @@ object Pianta {
         val mezzo = if (stretto) LARGO_PORTA else LARGO_PASSAGGIO
         val l = 0.5f - mezzo   // quanta parete resta ai lati del varco
         return when (k.lato) {
-            dev.michelelops.arcaniaquest.regole.Lato.NORD ->
+            Lato.NORD ->
                 Riquadro(x + l, z - s, x + 1f - l, z + s)
-            dev.michelelops.arcaniaquest.regole.Lato.SUD ->
+            Lato.SUD ->
                 Riquadro(x + l, z + 1f - s, x + 1f - l, z + 1f + s)
-            dev.michelelops.arcaniaquest.regole.Lato.OVEST ->
+            Lato.OVEST ->
                 Riquadro(x - s, z + l, x + s, z + 1f - l)
-            dev.michelelops.arcaniaquest.regole.Lato.EST ->
+            Lato.EST ->
                 Riquadro(x + 1f - s, z + l, x + 1f + s, z + 1f - l)
         }
     }

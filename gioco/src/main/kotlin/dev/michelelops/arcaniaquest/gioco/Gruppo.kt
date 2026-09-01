@@ -91,11 +91,19 @@ class Gruppo(private val dungeon: Dungeon, x: Int, z: Int, verso: Lato) {
         tempo = 0f; durata = Misure.DURATA_VOLTA
     }
 
+    /**
+     * Da dove parte a dove arriva, seguendo quanto tempo e' passato.
+     *
+     * Non e' una corsa a velocita' costante: parte piano, accelera e
+     * rallenta prima di fermarsi. E' la stessa cosa che fa un passo vero,
+     * e senza si ha l'impressione di essere sbalzati da una casella
+     * all'altra.
+     */
     private fun interpola(da: Float, a: Float): Float {
         if (durata <= 0f) return a
         val t = (tempo / durata).coerceIn(0f, 1f)
-        val e = if (t < 0.5f) 2f * t * t else -1f + (4f - 2f * t) * t
-        return da + (a - da) * e
+        val quanto = if (t < 0.5f) 2f * t * t else -1f + (4f - 2f * t) * t
+        return da + (a - da) * quanto
     }
 
     companion object {

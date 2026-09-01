@@ -34,15 +34,18 @@ class Materiali : Disposable {
     val ferro: Material
 
     init {
-        // I muri si ripetono lungo la loro lunghezza, il pavimento in
-        // tutte e due le direzioni. Specchiata invece che ripetuta: le
-        // texture combaciano ai bordi ma non alla perfezione, e la
-        // specchiatura toglie di mezzo la cucitura senza chiedere niente
-        // a chi le ha disegnate.
+        // Un muro si ripete lungo la sua lunghezza e non in altezza, che e'
+        // sempre quella: Repeat sulla U, ClampToEdge sulla V.
         val pietraMuro = carica("muri", Texture.TextureWrap.Repeat, Texture.TextureWrap.ClampToEdge)
         val pietraStretta = carica("muri_porte", Texture.TextureWrap.Repeat, Texture.TextureWrap.ClampToEdge)
+        // Il pavimento si ripete in tutte e due le direzioni, e specchiato
+        // invece che ripetuto: le immagini combaciano ai bordi ma non alla
+        // perfezione, e la specchiatura toglie di mezzo la cucitura senza
+        // chiedere niente a chi le ha disegnate.
         val pietraSuolo = carica("pavimento", Texture.TextureWrap.MirroredRepeat, Texture.TextureWrap.MirroredRepeat)
         val assi = carica("legno", Texture.TextureWrap.Repeat, Texture.TextureWrap.ClampToEdge)
+        // La banda e' gia' ritagliata su misura e si usa intera: non si
+        // ripete ne' in un verso ne' nell'altro.
         val banda = carica("banda", Texture.TextureWrap.ClampToEdge, Texture.TextureWrap.ClampToEdge)
 
         pavimento = fatto(pietraSuolo, Color(0.95f, 0.94f, 0.92f, 1f))
@@ -90,28 +93,20 @@ class Materiali : Disposable {
     }
 
     /**
-     * @param conMipmap le versioni rimpicciolite della texture. Servono
-     *   alle superfici grandi, che si guardano anche da lontano. Su una
-     *   striscia sottile invece fanno danno: il livello lo sceglie la
-     *   direzione piu' compressa — l'altezza — e il filtro appiattisce
-     *   anche il dettaglio in lunghezza, riducendo il disegno a strisce.
+     * Carica `content/texture/<nome>.jpg`, o restituisce null se non c'e'.
+     *
+     * Tutte con mipmap, cioe' con le copie rimpicciolite che il motore usa
+     * quando la superficie e' lontana: senza, un pavimento in fondo a un
+     * corridoio formicola.
      */
-    private fun carica(
-        nome: String,
-        u: Texture.TextureWrap,
-        v: Texture.TextureWrap,
-        conMipmap: Boolean = true
-    ): Texture? {
+    private fun carica(nome: String, u: Texture.TextureWrap, v: Texture.TextureWrap): Texture? {
         val file = Gdx.files.internal("texture/$nome.jpg")
         if (!file.exists()) {
             Gdx.app.log("arcania", "texture mancante: ${file.path()}, si va a tinta unita")
             return null
         }
-        val t = Texture(file, conMipmap)
-        t.setFilter(
-            if (conMipmap) Texture.TextureFilter.MipMapLinearLinear else Texture.TextureFilter.Linear,
-            Texture.TextureFilter.Linear
-        )
+        val t = Texture(file, true)
+        t.setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear)
         t.setWrap(u, v)
         caricate += t
         return t
