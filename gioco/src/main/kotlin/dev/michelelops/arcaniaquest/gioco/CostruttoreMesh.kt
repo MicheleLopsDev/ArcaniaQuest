@@ -87,6 +87,15 @@ object CostruttoreMesh {
      */
     private const val APERTURA_ANTA = 82f
 
+    /**
+     * Una torcia appesa al muro: quanto sporge il braccio di ferro, quanto
+     * e' alta la fiamma da terra, e quanto e' grossa.
+     */
+    private const val SPORGENZA_TORCIA = 0.30f
+    private const val GROSSEZZA_BRACCIO = 0.09f
+    private const val ALTA_FIAMMA = 0.36f
+    private const val LARGA_FIAMMA = 0.20f
+
     /** Tutti i varchi aperti: come si costruisce un modulo isolato. */
     fun apertureLibere(m: Modulo): List<Apertura> =
         m.connettori.mapIndexed { i, k -> Apertura(i, k.porta, k.porta) }
@@ -125,7 +134,152 @@ object CostruttoreMesh {
         battenti(parte(mb, "porte", materiali.legno), m, aperture, fuoriOccupato)
         bandeDiFerro(parte(mb, "ferramenta", materiali.ferro), m, aperture, fuoriOccupato)
 
+        // Solo se ce ne sono: una parte vuota e' un pezzo di mesh senza
+        // triangoli che il motore si porta dietro per niente.
+        val torce = torceDi(m)
+        if (torce.isNotEmpty()) {
+            bracciDelleTorce(parte(mb, "torce", materiali.ferro), torce)
+            fiammeDelleTorce(parte(mb, "fiamme", materiali.fiamma), torce)
+        }
+
         return mb.end()
+    }
+
+    // ------------------------------------------------------------------
+    // le torce a muro
+    // ------------------------------------------------------------------
+
+    /**
+     * Una torcia appesa: dove arde la fiamma, in metri del modulo, e da
+     * che parte sporge il braccio che la regge — un versore orizzontale
+     * che punta verso l'interno della stanza.
+     *
+     * La posizione la vuole anche chi accende le luci, cosi' il chiarore
+     * esce dal fuoco che si vede e non da un punto qualsiasi.
+     */
+    class Torcia(val fuoco: Vector3, val versoLaStanza: Vector3)
+
+    /** Un tratto di muratura buono per appenderci qualcosa: il suo mezzo e la sua normale. */
+    private class PezzoDiMuro(val mx: Float, val mz: Float, val nx: Float, val nz: Float)
+
+    /**
+     * Le torce di un modulo, ricavate dagli arredi del catalogo.
+     *
+     * Il catalogo dice in che casella sta la torcia, non a quale parete
+     * appenderla. Non basta guardare i quattro lati della casella: in una
+     * sala ovale il muro non passa per il bordo della griglia, e una
+     * torcia messa li' finisce murata dentro la pietra. Si cerca invece il
+     * tratto di muratura vero piu' vicino al centro della casella — lo
+     * stesso che disegna i muri, quindi anche curvo dove la sala e' curva.
+     *
+     * Non dipende da quali porte sono aperte: una torcia sta dov'e', e la
+     * mesh non va rifatta quando il gruppo apre un battente.
+     */
+    fun torceDi(m: Modulo): List<Torcia> {
+        val arredi = m.arredi.filter { it.tipo == "torcia" }
+        if (arredi.isEmpty()) return emptyList()
+
+        val muri = trattiAppendibili(m)
+        return arredi.mapNotNull { a -> appendiA(muri, a.x + 0.5f, a.z + 0.5f) }
+    }
+
+    /**
+     * I mezzi dei tratti di muro dove una torcia ci puo' stare. Si scartano
+     * i vani — nessuno appende una torcia in mezzo a una porta — prendendo
+     * i varchi nella loro misura piu' larga, per stare abbondanti.
+     */
+    private fun trattiAppendibili(m: Modulo): List<PezzoDiMuro> {
+        val forme = Pianta.formeDi(m)
+        val varchi = m.connettori.map { Pianta.varco(it, stretto = false) }
+        val fuori = mutableListOf<PezzoDiMuro>()
+
+        for ((i, poly) in forme.map { Pianta.contorno(it) }.withIndex()) {
+            val baricentro = Pianta.baricentro(poly)
+            for (k in poly.indices) {
+                if (!muroQui(poly, k, forme, i, varchi)) continue
+                val a = poly[k]
+                val d = poly[(k + 1) % poly.size]
+                val n = normaleUscente(poly, k, baricentro)
+                fuori += PezzoDiMuro((a[0] + d[0]) / 2f, (a[1] + d[1]) / 2f, n[0], n[1])
+            }
+        }
+        return fuori
+    }
+
+    /**
+     * Appende una torcia al muro piu' vicino a (cx, cz), in caselle. Null
+     * se di muri non ce n'e' nessuno: meglio niente che una fiamma per
+     * aria in mezzo al niente.
+     */
+    private fun appendiA(muri: List<PezzoDiMuro>, cx: Float, cz: Float): Torcia? {
+        val muro = muri.minByOrNull { hypot(it.mx - cx, it.mz - cz) } ?: return null
+        val c = Misure.CASELLA
+        // la normale esce dalla stanza: il braccio va dalla parte opposta
+        val dentroX = -muro.nx
+        val dentroZ = -muro.nz
+        return Torcia(
+            fuoco = Vector3(
+                muro.mx * c + dentroX * SPORGENZA_TORCIA,
+                Misure.ALTEZZA_TORCIA,
+                muro.mz * c + dentroZ * SPORGENZA_TORCIA
+            ),
+            versoLaStanza = Vector3(dentroX, 0f, dentroZ)
+        )
+    }
+
+    /**
+     * Il braccio di ferro che esce dal muro e regge la fiamma: una barra
+     * lunga quanto sporge la torcia, girata a seguire la parete. Sulle
+     * sale tonde la parete non e' allineata agli assi, quindi la scatola
+     * va ruotata e non solo spostata.
+     */
+    private fun bracciDelleTorce(b: MeshPartBuilder, torce: List<Torcia>) {
+        for (t in torce) {
+            val d = t.versoLaStanza
+            BoxShapeBuilder.build(
+                b,
+                Matrix4()
+                    .setToTranslation(
+                        t.fuoco.x - d.x * SPORGENZA_TORCIA / 2f,
+                        t.fuoco.y - ALTA_FIAMMA / 2f,
+                        t.fuoco.z - d.z * SPORGENZA_TORCIA / 2f
+                    )
+                    .rotate(Vector3.Y, gradiDi(d.x, d.z))
+                    .scale(SPORGENZA_TORCIA, GROSSEZZA_BRACCIO, GROSSEZZA_BRACCIO)
+            )
+        }
+    }
+
+    /**
+     * La fiamma: una piramide, non un cubo.
+     *
+     * Il colore emissivo e' uguale su tutte le facce — non lo tocca
+     * nessuna luce, e' quello il suo mestiere — quindi una scatola viene
+     * fuori come un rettangolo arancione appiccicato al muro. Di una
+     * fiamma si riconosce la sagoma, e la sagoma bisogna dargliela: larga
+     * in basso, a punta in cima.
+     */
+    private fun fiammeDelleTorce(b: MeshPartBuilder, torce: List<Torcia>) {
+        for (t in torce) {
+            val mezzo = LARGA_FIAMMA / 2f
+            val yBase = t.fuoco.y - ALTA_FIAMMA / 2f
+            val punta = Vector3(t.fuoco.x, yBase + ALTA_FIAMMA, t.fuoco.z)
+            val base = listOf(
+                Vector3(t.fuoco.x - mezzo, yBase, t.fuoco.z - mezzo),
+                Vector3(t.fuoco.x + mezzo, yBase, t.fuoco.z - mezzo),
+                Vector3(t.fuoco.x + mezzo, yBase, t.fuoco.z + mezzo),
+                Vector3(t.fuoco.x - mezzo, yBase, t.fuoco.z + mezzo)
+            )
+            for (i in base.indices) {
+                faccia(b, base[i], base[(i + 1) % base.size], punta)
+            }
+        }
+    }
+
+    /** Un triangolo qualsiasi, con la normale ricavata dai suoi due lati. */
+    private fun faccia(b: MeshPartBuilder, a: Vector3, c: Vector3, d: Vector3) {
+        val n = Vector3(c).sub(a).crs(Vector3(d).sub(a)).nor()
+        b.triangle(vertice(a, n, 0f, 0f), vertice(c, n, 1f, 0f), vertice(d, n, 0.5f, 1f))
     }
 
     /** Il centro di un battente, sul filo del confine fra le due caselle. */

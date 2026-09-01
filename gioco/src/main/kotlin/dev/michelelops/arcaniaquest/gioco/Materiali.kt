@@ -32,6 +32,7 @@ class Materiali : Disposable {
     val cima: Material
     val legno: Material
     val ferro: Material
+    val fiamma: Material
 
     init {
         // Un muro si ripete lungo la sua lunghezza e non in altezza, che e'
@@ -71,7 +72,23 @@ class Materiali : Disposable {
         // coordinate di serie, che vanno da zero a uno, cadono giuste
         // senza deformare niente.
         ferro = fatto(banda, Color(1f, 1f, 1f, 1f))
+        fiamma = fuoco()
     }
+
+    /**
+     * Il materiale della fiamma di una torcia.
+     *
+     * Una fiamma non e' illuminata: illumina. Il colore emissivo e'
+     * l'unico che lo shader di serie somma **dopo** aver fatto i conti
+     * delle luci, quindi resta acceso anche dove non arriva niente. Con
+     * un diffuso normale la fiamma sarebbe una scatoletta arancione che
+     * si spegne insieme alla stanza.
+     */
+    private fun fuoco(): Material = Material(
+        ColorAttribute.createDiffuse(Color(0.30f, 0.13f, 0.04f, 1f)),
+        ColorAttribute.createEmissive(Color(1f, 0.66f, 0.24f, 1f)),
+        IntAttribute.createCullFace(GL20.GL_NONE)
+    )
 
     /**
      * Niente scarto delle facce di dietro: il gruppo sta sempre dentro il

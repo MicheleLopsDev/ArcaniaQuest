@@ -16,6 +16,7 @@ import com.badlogic.gdx.graphics.g3d.ModelInstance
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight
 import com.badlogic.gdx.graphics.g3d.environment.PointLight
+import com.badlogic.gdx.math.Vector3
 import dev.michelelops.arcaniaquest.regole.Catalogo
 import dev.michelelops.arcaniaquest.regole.Dungeon
 import dev.michelelops.arcaniaquest.regole.Esplorazione
@@ -90,6 +91,10 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
     private var ambiente = Environment()
 
     private val torciaDelGruppo = PointLight()
+
+    /** I fuochi del sotterraneo, e le quattro lampade che ne illuminano altrettanti. */
+    private val fuochi = mutableListOf<Fuoco>()
+    private val lampade = List(Misure.TORCE_ACCESE) { PointLight() }
     private var ultimoRifiuto: Rifiuto = Rifiuto.NIENTE
     private var fotogrammi = 0
 
@@ -144,6 +149,7 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
     }
 
     private fun rifaiTutteLeMesh() {
+        segnaIFuochi()
         rifaiAmbiente()
         for (m in modelli.values) m.dispose()
         modelli.clear()
@@ -205,6 +211,11 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
     /**
      * Le luci. Due modi soli: a giorno, che serve a controllare la mesh, e
      * a lume di torcia, che e' come si gioca.
+     *
+     * Le lampade sono sempre le stesse quattro: si aggiungono qui una
+     * volta e poi si spostano sulle torce vicine. Aggiungerne e toglierne
+     * a ogni passo rimescolerebbe l'ordine dentro l'Environment, ed e'
+     * l'ordine a decidere quali lo shader tiene e quali butta.
      */
     private fun rifaiAmbiente() {
         ambiente = Environment().apply {
@@ -216,22 +227,75 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
                 set(ColorAttribute(ColorAttribute.Fog, 0.015f, 0.018f, 0.024f, 1f))
                 add(DirectionalLight().set(0.24f, 0.25f, 0.29f, -0.4f, -0.9f, -0.25f))
                 add(torciaDelGruppo)
-                torceAMuro().forEach { add(it) }
+                lampade.forEach { add(it) }
             }
         }
     }
 
-    /** Le torce appese ai muri, una per ogni arredo del catalogo che ne dichiara una. */
-    private fun torceAMuro(): List<PointLight> = dungeon.pezzi.flatMap { p ->
-        p.modulo.arredi.filter { it.tipo == "torcia" }.map { a ->
-            PointLight().set(
-                Color(1f, 0.62f, 0.28f, 1f),
-                (a.x + p.ox + 0.5f) * Misure.CASELLA,
-                Misure.ALTEZZA_MURO * 0.62f,
-                (a.z + p.oz + 0.5f) * Misure.CASELLA,
-                Misure.FORZA_TORCIA_A_MURO
+    /**
+     * Dove sta ogni fuoco del sotterraneo, in metri di mondo.
+     *
+     * Si segna una volta quando il dungeon nasce: le torce a muro non si
+     * spostano. La [fase] e' quella del suo tremolio, e serve solo perche'
+     * due fiamme vicine non ballino all'unisono come se fossero la stessa.
+     */
+    private class Fuoco(val posizione: Vector3, val fase: Float)
+
+    private fun segnaIFuochi() {
+        fuochi.clear()
+        for (p in dungeon.pezzi) {
+            for (t in CostruttoreMesh.torceDi(p.modulo)) {
+                fuochi += Fuoco(
+                    Vector3(
+                        t.fuoco.x + p.ox * Misure.CASELLA,
+                        t.fuoco.y,
+                        t.fuoco.z + p.oz * Misure.CASELLA
+                    ),
+                    fase = fuochi.size * 1.7f
+                )
+            }
+        }
+    }
+
+    /**
+     * Accende le quattro torce piu' vicine al gruppo e spegne le altre.
+     *
+     * Non e' un risparmio: e' l'unico modo di sceglierle. Lo shader di
+     * serie prende le prime cinque luci che trova nell'Environment e
+     * scarta le altre in silenzio, senza guardare dove sta chi guarda —
+     * senza questa cernita si accenderebbero quattro torce a caso, magari
+     * dall'altra parte del sotterraneo.
+     */
+    private fun aggiornaLeTorce() {
+        val vicine = fuochi.sortedBy { it.posizione.dst2(camera.position) }
+        for ((i, lampada) in lampade.withIndex()) {
+            val f = vicine.getOrNull(i)
+            if (f == null) {
+                lampada.intensity = 0f
+                continue
+            }
+            lampada.set(
+                COLORE_TORCIA,
+                f.posizione.x, f.posizione.y, f.posizione.z,
+                Misure.FORZA_TORCIA_A_MURO * tremolio(f.fase, AMPIEZZA_A_MURO)
             )
         }
+    }
+
+    /**
+     * Quanto arde una fiamma in questo istante, fra circa 1 - ampiezza e 1.
+     *
+     * Due onde di periodo diverso, che non tornano mai in fase: una fiamma
+     * vera non ha un ritmo, e un tremolio regolare si riconosce subito.
+     *
+     * Il tempo lo da' il numero di fotogrammi e non l'orologio, cosi' due
+     * scatti dello stesso fotogramma vengono identici e si possono ancora
+     * confrontare pixel per pixel quando si cerca un guaio grafico.
+     */
+    private fun tremolio(fase: Float, ampiezza: Float): Float {
+        val t = fotogrammi / 60f + fase
+        val onda = 0.62f * sin(t * 11.3f) + 0.38f * sin(t * 6.7f)
+        return 1f - ampiezza * (1f - onda) / 2f
     }
 
     private fun pezzoCorrente(): Piazzato? = dungeon.pezzoIn(gruppo.x, gruppo.z)
@@ -418,12 +482,15 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
         camera.up.set(0f, 1f, 0f)
         camera.update()
 
-        // Il gruppo si porta dietro la torcia: senza, il buio sarebbe totale.
+        // Il gruppo si porta dietro la torcia. Trema molto meno di quelle
+        // a muro: e' attaccata alla telecamera, e una luce che pulsa forte
+        // a mezzo metro dagli occhi da' il mal di mare.
         torciaDelGruppo.set(
-            Color(1f, 0.68f, 0.36f, 1f),
+            COLORE_TORCIA_GRUPPO,
             px, Misure.ALTEZZA_OCCHI + 0.35f, pz,
-            Misure.FORZA_TORCIA_GRUPPO
+            Misure.FORZA_TORCIA_GRUPPO * tremolio(0f, AMPIEZZA_DEL_GRUPPO)
         )
+        aggiornaLeTorce()
     }
 
     /**
@@ -514,6 +581,15 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
         pixmap.dispose()
         Gdx.app.log("arcania", "scatto salvato in ${avvio.fileScatto}")
         Gdx.app.exit()
+    }
+
+    private companion object {
+        val COLORE_TORCIA = Color(1f, 0.62f, 0.28f, 1f)
+        val COLORE_TORCIA_GRUPPO = Color(1f, 0.68f, 0.36f, 1f)
+
+        /** Di quanto cala una fiamma nel punto piu' basso del tremolio. */
+        const val AMPIEZZA_A_MURO = 0.22f
+        const val AMPIEZZA_DEL_GRUPPO = 0.07f
     }
 
     override fun dispose() {

@@ -28,6 +28,22 @@ object Misure {
     const val FONDO_BUIO = 26f
 
     /**
+     * A che altezza arde la fiamma di una torcia appesa al muro: poco
+     * sopra la testa, cosi' illumina e non abbaglia.
+     */
+    const val ALTEZZA_TORCIA = 1.95f
+
+    /**
+     * Quante torce a muro restano accese per volta.
+     *
+     * Lo shader di serie di libGDX ne accetta cinque in tutto e le
+     * eccedenti le butta via senza dire niente: una e' quella del gruppo,
+     * quindi per i muri ne restano quattro. Si tengono le piu' vicine, che
+     * tanto le altre sono oltre il fondo del buio.
+     */
+    const val TORCE_ACCESE = 4
+
+    /**
      * Forza delle luci puntiformi. libGDX le smorza con 1/(1 + d^2) e
      * satura a 2. Con le texture al posto delle tinte piatte i valori
      * sono raddoppiati: una pietra fotografata riflette meno della meta'
