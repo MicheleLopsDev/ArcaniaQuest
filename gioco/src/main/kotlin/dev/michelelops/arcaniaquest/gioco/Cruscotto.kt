@@ -7,18 +7,15 @@ import com.badlogic.gdx.graphics.Pixmap
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.GlyphLayout
+import com.badlogic.gdx.graphics.g2d.TextureRegion
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.math.Matrix4
 import com.badlogic.gdx.utils.Disposable
-import dev.michelelops.arcaniaquest.regole.Cella
-import dev.michelelops.arcaniaquest.regole.Dungeon
 import dev.michelelops.arcaniaquest.regole.Esplorazione
-import dev.michelelops.arcaniaquest.regole.Famiglia
 import dev.michelelops.arcaniaquest.regole.Lato
 
 /** Tutto quello che al cruscotto serve sapere per disegnare un fotogramma. */
 class StatoHud(
-    val dungeon: Dungeon,
     val esplorazione: Esplorazione,
     val x: Int,
     val z: Int,
@@ -29,6 +26,8 @@ class StatoHud(
     val messaggio: String,
     /** Il seme che si sta battendo, o null se non si sta scrivendo. */
     val semeInScrittura: String? = null,
+    /** La mappa gia' dipinta dall'alto, quella che si vede in questo fotogramma. */
+    val pianta: Quadro? = null,
     /** In modalita' guarda-un-modulo il seme non genera niente: e' rumore. */
     val unSoloModulo: Boolean = false
 )
@@ -49,6 +48,7 @@ class Cruscotto : Disposable {
     private val misura = GlyphLayout()
     private val proiezione = Matrix4()
     private val tinta: Texture
+    private val puntatore: TextureRegion
 
     var visibile = true
 
@@ -59,10 +59,7 @@ class Cruscotto : Disposable {
     private val ambra = Color(0.88f, 0.60f, 0.28f, 1f)
     private val pergamena = Color(0.86f, 0.84f, 0.78f, 1f)
     private val spenta = Color(0.50f, 0.49f, 0.45f, 1f)
-    private val verde = Color(0.42f, 0.68f, 0.38f, 1f)
     private val ruggine = Color(0.72f, 0.35f, 0.22f, 1f)
-    private val sala = Color(0.42f, 0.40f, 0.36f, 1f)
-    private val andito = Color(0.28f, 0.30f, 0.33f, 1f)
     private val sangue = Color(0.66f, 0.22f, 0.20f, 1f)
 
     private var s = 1f
@@ -71,6 +68,7 @@ class Cruscotto : Disposable {
         val p = Pixmap(1, 1, Pixmap.Format.RGBA8888)
         p.setColor(Color.WHITE); p.fill()
         tinta = Texture(p); p.dispose()
+        puntatore = TextureRegion(triangolo())
         font.setUseIntegerPositions(false)
         // il carattere di serie e' da 15 pixel: ingrandito senza filtro
         // viene a scaletta, e un pannello si legge di sfuggita
@@ -106,8 +104,7 @@ class Cruscotto : Disposable {
 
         if (stato.mappaGrande) {
             rett(Riq(0f, 0f, t.larghezza, t.altezza), Color(0f, 0f, 0f, 0.72f))
-            val grande = Riq(t.larghezza * 0.08f, t.altezza * 0.08f, t.larghezza * 0.84f, t.altezza * 0.84f)
-            mappa(grande, stato, true)
+            mappa(t.mappaGrande, stato, true)
         }
 
         batch.end()
@@ -147,6 +144,19 @@ class Cruscotto : Disposable {
 
     /** Lo spazio dentro una cornice, sotto la barra del titolo. */
     private fun dentro(r: Riq) = Riq(r.x + pad(), r.y + pad(), r.w - pad() * 2f, r.h - barra() - pad() * 1.5f)
+
+    /**
+     * Lo stesso buco della cornice, ma richiedibile da fuori: serve a chi
+     * deve dipingere una figura grande esattamente quanto ci sta dentro.
+     * Rifare il conto altrove vorrebbe dire tenere allineati due posti, e
+     * alla prima modifica della cornice la mappa uscirebbe stirata di
+     * qualche pixel.
+     */
+    fun bucoDellaCornice(r: Riq, t: Telaio): Riq {
+        s = (t.altezza / 760f).coerceIn(0.85f, 2.4f)
+        font.data.setScale(s)
+        return dentro(r)
+    }
 
     private fun zaino(r: Riq) {
         cornice(r, "ZAINO", "finto")
@@ -271,114 +281,91 @@ class Cruscotto : Disposable {
     // ---------- la mappa ----------
 
     /**
-     * La mappa si scopre camminando: si disegnano solo le caselle che il
-     * gruppo ha visto. Le stanze e i corridoi hanno tinte diverse perche'
-     * nel gioco valgono cose diverse, e la differenza deve saltare
-     * all'occhio anche sulla mappa.
+     * La mappa: la scena vera vista dall'alto, dipinta altrove e qui solo
+     * appiccicata dentro la cornice.
+     *
+     * Non e' piu' un disegno a quadretti che imita il sotterraneo, e' il
+     * sotterraneo: sale tonde tonde, porte, torce. Quello che il gruppo
+     * non ha ancora visto non e' stato dipinto, quindi resta il fondo
+     * scuro — la nebbia di guerra e' un pezzo che manca, non una toppa
+     * messa sopra.
      */
     private fun mappa(r: Riq, stato: StatoHud, grande: Boolean) {
-        val titolo = if (grande) "MAPPA DEL SOTTERRANEO" else "MAPPA"
         val e = stato.esplorazione
-        cornice(r, titolo, "${e.percento}%  esplorato")
+        cornice(r, if (grande) "MAPPA DEL SOTTERRANEO" else "MAPPA", "${e.percento}%  esplorato")
         val d = dentro(r)
         rett(d, Color(0.03f, 0.033f, 0.036f, 1f))
 
-        val viste = e.celleViste()
-        if (viste.isEmpty()) return
-        val q = inquadra(d, viste, stato, grande)
+        // il quadro e' dipinto per il pannello che si vede adesso: quando
+        // e' aperta la mappa grande, quella piccola le sta sotto coperta
+        if (grande != stato.mappaGrande) return
+        val pianta = stato.pianta ?: return
+
+        batch.color = Color.WHITE
+        batch.draw(pianta.quadro, d.x, d.y, d.w, d.h)
 
         forbici(d)
-        caselleDellaMappa(q, viste, stato, e)
-        porteDellaMappa(q, viste, stato)
-        freccia(q.sx(stato.x) + q.lato / 2f, q.sy(stato.z) + q.lato / 2f, q.lato * 0.34f, stato.verso)
+        freccia(
+            d.x + pianta.doveX * d.w,
+            d.y + pianta.doveY * d.h,
+            maxOf(5f * s, pianta.perCasella * 0.38f),
+            stato.verso
+        )
         niForbici()
     }
 
-    /** Dove cade sullo schermo la casella (x, z) del sotterraneo, e quanto e' grande. */
-    private class Inquadratura(val ox: Float, val oz: Float, val lato: Float) {
-        fun sx(x: Int) = ox + x * lato
-        /** La z del sotterraneo cresce verso sud, la y dello schermo verso l'alto: si ribalta. */
-        fun sy(z: Int) = oz - (z + 1) * lato
-    }
-
     /**
-     * Sceglie quanto disegnare grandi le caselle e dove metterle.
+     * Il gruppo sulla mappa: un triangolo che guarda dove guarda lui.
      *
-     * La casella non si rimpicciolisce all'infinito, se no non si capisce
-     * piu' niente: quando quello che si e' scoperto non ci sta piu' nel
-     * pannello, la mappa smette di stringersi e comincia a scorrere dietro
-     * al gruppo, che resta al centro. E nemmeno si ingrandisce
-     * all'infinito: due caselle appena viste non devono diventare due
-     * francobolli giganti in mezzo al vuoto.
+     * Sotto ce n'e' uno nero appena piu' grande, che fa da contorno: sul
+     * pavimento chiaro di una sala un triangolo arancione da solo si
+     * perderebbe.
      */
-    private fun inquadra(d: Riq, viste: Collection<Cella>, stato: StatoHud, grande: Boolean): Inquadratura {
-        val x0 = viste.minOf { it.x }
-        val z0 = viste.minOf { it.z }
-        val colonne = (viste.maxOf { it.x } - x0 + 1).coerceAtLeast(1)
-        val righe = (viste.maxOf { it.z } - z0 + 1).coerceAtLeast(1)
-
-        val minima = if (grande) 7f * s else 5f * s
-        val massima = if (grande) 40f * s else 22f * s
-        val lato = minOf(massima, maxOf(minima, minOf(d.w / colonne, d.h / righe)))
-
-        val ciSta = colonne * lato <= d.w
-        val ciStaInAltezza = righe * lato <= d.h
-        return Inquadratura(
-            ox = if (ciSta) d.cx - colonne * lato / 2f - x0 * lato
-                 else d.cx - (stato.x + 0.5f) * lato,
-            oz = if (ciStaInAltezza) d.cy + righe * lato / 2f + z0 * lato
-                 else d.cy + (stato.z + 0.5f) * lato,
-            lato = lato
-        )
-    }
-
-    /** Le caselle viste: piene se ci si e' camminati, sbiadite se solo intraviste. */
-    private fun caselleDellaMappa(q: Inquadratura, viste: Collection<Cella>, stato: StatoHud, e: Esplorazione) {
-        for (c in viste) {
-            val colore = when (stato.dungeon.pezzoIn(c.x, c.z)?.modulo?.famiglia) {
-                Famiglia.CORRIDOIO -> andito
-                else -> sala
-            }
-            rett(
-                Riq(q.sx(c.x), q.sy(c.z), q.lato - 1f, q.lato - 1f),
-                if (e.calpestata(c)) colore else Color(colore.r, colore.g, colore.b, 0.45f)
-            )
-        }
-    }
-
-    /** Le porte gia' incontrate: chiuse in ruggine, aperte in verde. */
-    private fun porteDellaMappa(q: Inquadratura, viste: Collection<Cella>, stato: StatoHud) {
-        for (porta in stato.dungeon.passaggi.filter { it.conBattente }) {
-            if (porta.a !in viste && porta.b !in viste) continue
-            val mx = (q.sx(porta.a.x) + q.sx(porta.b.x)) / 2f
-            val my = (q.sy(porta.a.z) + q.sy(porta.b.z)) / 2f
-            val spesso = maxOf(2f, q.lato * 0.22f)
-            // una porta fra due caselle affiancate si disegna in piedi, e viceversa
-            val fraCaselleAffiancate = porta.a.z == porta.b.z
-            rett(
-                if (fraCaselleAffiancate)
-                    Riq(mx + q.lato / 2f - spesso / 2f, my + q.lato * 0.2f, spesso, q.lato * 0.6f)
-                else
-                    Riq(mx + q.lato * 0.2f, my + q.lato / 2f - spesso / 2f, q.lato * 0.6f, spesso),
-                if (porta.aperta) verde else ruggine
-            )
-        }
-    }
-
-    /** Il gruppo sulla mappa: un triangolo che guarda dove guarda lui. */
     private fun freccia(cx: Float, cy: Float, raggio: Float, verso: Lato) {
-        val (dx, dy) = when (verso) {
-            Lato.NORD -> 0f to 1f
-            Lato.SUD -> 0f to -1f
-            Lato.EST -> 1f to 0f
-            Lato.OVEST -> -1f to 0f
+        val lato = maxOf(9f, raggio * 2.4f)
+        val gradi = when (verso) {
+            Lato.NORD -> 0f
+            Lato.OVEST -> 90f
+            Lato.SUD -> 180f
+            Lato.EST -> 270f
         }
-        val sp = maxOf(3f, raggio * 1.1f)
-        rett(Riq(cx - sp / 2f, cy - sp / 2f, sp, sp), ambra)
-        // la punta, che dice da che parte si guarda
-        val punta = maxOf(2f, raggio * 0.55f)
-        rett(Riq(cx + dx * raggio * 1.15f - punta / 2f, cy + dy * raggio * 1.15f - punta / 2f,
-            punta, punta), ambra)
+        puntale(cx, cy, lato * 1.5f, gradi, Color(0f, 0f, 0f, 0.85f))
+        puntale(cx, cy, lato, gradi, ambra)
+    }
+
+    private fun puntale(cx: Float, cy: Float, lato: Float, gradi: Float, colore: Color) {
+        batch.color = colore
+        batch.draw(
+            puntatore,
+            cx - lato / 2f, cy - lato / 2f,
+            lato / 2f, lato / 2f,
+            lato, lato,
+            1f, 1f,
+            gradi
+        )
+        batch.color = Color.WHITE
+    }
+
+    /** Un triangolo che punta in su, da girare poi dove serve. */
+    private fun triangolo(): Texture {
+        val p = Pixmap(LATO_PUNTATORE, LATO_PUNTATORE, Pixmap.Format.RGBA8888)
+        p.blending = Pixmap.Blending.None
+        p.setColor(0f, 0f, 0f, 0f)
+        p.fill()
+        p.setColor(Color.WHITE)
+        val l = LATO_PUNTATORE - 1
+        // la punta in cima: nella pixmap la y cresce verso il basso, e una
+        // TextureRegion si disegna con la prima riga in alto, quindi cosi'
+        // esce diritta
+        p.fillTriangle(l / 2, 1, l - 2, l - 2, 2, l - 2)
+        val t = Texture(p)
+        t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear)
+        p.dispose()
+        return t
+    }
+
+    private companion object {
+        const val LATO_PUNTATORE = 48
     }
 
     // ---------- pennelli ----------
@@ -433,5 +420,6 @@ class Cruscotto : Disposable {
         batch.dispose()
         font.dispose()
         tinta.dispose()
+        puntatore.texture.dispose()
     }
 }

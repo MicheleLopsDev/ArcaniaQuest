@@ -95,6 +95,18 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
     /** I fuochi del sotterraneo, e le quattro lampade che ne illuminano altrettanti. */
     private val fuochi = mutableListOf<Fuoco>()
     private val lampade = List(Misure.TORCE_ACCESE) { PointLight() }
+
+    /**
+     * La mappa dall'alto, in due misure: quella del pannello e quella a
+     * tutto schermo. Sono due oggetti e non uno perche' ognuno si tiene il
+     * suo quadro fuori schermo, e rifarlo a ogni pressione di M vorrebbe
+     * dire riallocare sulla scheda video a ogni pressione di M.
+     *
+     * Nascono in create() e non qui: si portano dietro roba della scheda
+     * video, che prima di create() non esiste ancora.
+     */
+    private lateinit var piantaNelPannello: PiantaDallAlto
+    private lateinit var piantaATuttoSchermo: PiantaDallAlto
     private var ultimoRifiuto: Rifiuto = Rifiuto.NIENTE
     private var fotogrammi = 0
 
@@ -108,6 +120,8 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
         }
         batch = ModelBatch()
         materiali = Materiali()
+        piantaNelPannello = PiantaDallAlto()
+        piantaATuttoSchermo = PiantaDallAlto()
         if (!avvio.dallAlto) cruscotto = Cruscotto()
         mappaGrande = avvio.mappaAperta
         semeScritto = avvio.chiediIlSeme
@@ -347,7 +361,7 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT)
 
         disegnaScena(if (cruscotto?.visibile == true) dentroLaVista() else Riq(0f, 0f, l, a))
-        cruscotto?.disegna(telaio, statoHud())
+        cruscotto?.disegna(telaio, statoHud(dipingiLaMappa()))
 
         fotogrammi++
         if (avvio.scattaDopo > 0 && fotogrammi >= avvio.scattaDopo) scatta()
@@ -433,10 +447,31 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
         return Riq(v.x + 1f, v.y + 1f, v.w - 2f, v.h - barra - 2f)
     }
 
-    private fun statoHud(): StatoHud {
+    /**
+     * Dipinge la mappa che si vedra' in questo fotogramma, e solo quella:
+     * con la mappa grande aperta il pannello piccolo ci sta sotto e non
+     * si vede, quindi non vale la pena disegnarlo.
+     */
+    private fun dipingiLaMappa(): Quadro? {
+        val c = cruscotto ?: return null
+        if (!c.visibile) return null
+        val grande = mappaGrande
+        val dove = if (grande) telaio.mappaGrande else telaio.mappa
+        return (if (grande) piantaATuttoSchermo else piantaNelPannello).dipingi(
+            misura = c.bucoDellaCornice(dove, telaio),
+            dungeon = dungeon,
+            istanze = istanze,
+            esplorazione = esplorazione,
+            gruppoX = (gruppo.mostraX + 0.5f) * Misure.CASELLA,
+            gruppoZ = (gruppo.mostraZ + 0.5f) * Misure.CASELLA,
+            scala = if (grande) PiantaDallAlto.Scala.A_TUTTO_SCHERMO
+                    else PiantaDallAlto.Scala.NEL_PANNELLO
+        )
+    }
+
+    private fun statoHud(pianta: Quadro?): StatoHud {
         val p = pezzoCorrente()
         return StatoHud(
-            dungeon = dungeon,
             esplorazione = esplorazione,
             x = gruppo.x, z = gruppo.z, verso = gruppo.verso,
             seme = sorte.semeScritto(),
@@ -444,6 +479,7 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
             mappaGrande = mappaGrande,
             messaggio = messaggio,
             semeInScrittura = semeScritto,
+            pianta = pianta,
             unSoloModulo = avvio.modulo != null
         )
     }
@@ -603,6 +639,8 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
         batch.dispose()
         materiali.dispose()
         for (m in modelli.values) m.dispose()
+        piantaNelPannello.dispose()
+        piantaATuttoSchermo.dispose()
         cruscotto?.dispose()
     }
 }

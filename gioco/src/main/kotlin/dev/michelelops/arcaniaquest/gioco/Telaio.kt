@@ -30,6 +30,15 @@ class Telaio(val larghezza: Float, val altezza: Float) {
     /** In verticale i pannelli si impilano: sotto una certa larghezza non ci starebbero affiancati. */
     val stretto = larghezza < altezza * 1.15f
 
+    /**
+     * La mappa aperta a tutto schermo, col tasto M. Sta qui e non dentro
+     * il cruscotto perche' non e' solo il cruscotto a doverla conoscere:
+     * la pianta dall'alto va dipinta prima, e per dipingerla in proporzione
+     * bisogna sapere quanto sara' larga.
+     */
+    val mappaGrande: Riq
+        get() = Riq(larghezza * 0.08f, altezza * 0.08f, larghezza * 0.84f, altezza * 0.84f)
+
     val vista: Riq
     val zaino: Riq
     val mappa: Riq
