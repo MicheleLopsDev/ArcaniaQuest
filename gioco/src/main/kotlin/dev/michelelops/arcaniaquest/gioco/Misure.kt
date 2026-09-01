@@ -30,10 +30,13 @@ object Misure {
 
     /**
      * Forza delle luci puntiformi. libGDX le smorza con 1/(1 + d^2) e
-     * satura a 2: sopra il 5 e' gia' tutto bruciato, non piu' luminoso.
+     * satura a 2. Con le texture al posto delle tinte piatte i valori
+     * sono raddoppiati: una pietra fotografata riflette meno della meta'
+     * di un grigio pieno, e con la vecchia taratura il sotterraneo era
+     * nero.
      */
-    const val FORZA_TORCIA_GRUPPO = 4.6f
-    const val FORZA_TORCIA_A_MURO = 5.0f
+    const val FORZA_TORCIA_GRUPPO = 9.5f
+    const val FORZA_TORCIA_A_MURO = 10f
 
     /** Quanto e' fitto il contorno di un poligono arrotondato. */
     const val PASSO_CONTORNO = 0.22f

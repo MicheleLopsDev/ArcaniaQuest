@@ -77,6 +77,7 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
     private lateinit var camera: PerspectiveCamera
     private lateinit var batch: ModelBatch
     private var cruscotto: Cruscotto? = null
+    private lateinit var materiali: Materiali
     private var telaio = Telaio(1f, 1f)
     private var mappaGrande = false
     private var messaggio = ""
@@ -101,6 +102,7 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
             far = if (avvio.dallAlto) 1200f else if (avvio.pienaLuce) 120f else Misure.FONDO_BUIO
         }
         batch = ModelBatch()
+        materiali = Materiali()
         if (!avvio.dallAlto) cruscotto = Cruscotto()
         mappaGrande = avvio.mappaAperta
         semeScritto = avvio.chiediIlSeme
@@ -173,10 +175,16 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
             Apertura(
                 indice = i,
                 stretta = porta?.conBattente ?: k.porta,
-                battente = porta != null && !porta.aperta && porta.proprietario == (p.chiave to i)
+                // Senza passaggio il modulo e' isolato — e' la modalita'
+                // guarda-un-pezzo — e allora vale quello che dice il
+                // catalogo, se no le porte sparirebbero proprio dove le si
+                // sta andando a controllare.
+                battente = if (porta != null)
+                    !porta.aperta && porta.proprietario == (p.chiave to i)
+                else k.porta
             )
         }
-        val modello = CostruttoreMesh.costruisci(p.modulo, aperture) { lx, lz ->
+        val modello = CostruttoreMesh.costruisci(p.modulo, materiali, aperture) { lx, lz ->
             // di la' dal muro c'e' un altro modulo? allora li' non ci va
             // pietra: il confine e' condiviso
             val altro = dungeon.pezzoIn(lx + p.ox, lz + p.oz)
@@ -194,9 +202,9 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
                 set(ColorAttribute(ColorAttribute.AmbientLight, 0.55f, 0.56f, 0.58f, 1f))
                 add(DirectionalLight().set(0.5f, 0.5f, 0.5f, -0.4f, -0.9f, -0.25f))
             } else {
-                set(ColorAttribute(ColorAttribute.AmbientLight, 0.17f, 0.18f, 0.22f, 1f))
+                set(ColorAttribute(ColorAttribute.AmbientLight, 0.34f, 0.35f, 0.40f, 1f))
                 set(ColorAttribute(ColorAttribute.Fog, 0.015f, 0.018f, 0.024f, 1f))
-                add(DirectionalLight().set(0.13f, 0.14f, 0.17f, -0.4f, -0.9f, -0.25f))
+                add(DirectionalLight().set(0.24f, 0.25f, 0.29f, -0.4f, -0.9f, -0.25f))
                 add(torciaDelGruppo)
                 // Le torce a muro dei pezzi che le hanno. Il numero di luci
                 // che il motore accetta e' piccolo, quindi si tengono solo
@@ -480,6 +488,7 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
 
     override fun dispose() {
         batch.dispose()
+        materiali.dispose()
         for (m in modelli.values) m.dispose()
         cruscotto?.dispose()
     }

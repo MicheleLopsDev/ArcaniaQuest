@@ -31,12 +31,16 @@ data class Apertura(val indice: Int, val stretta: Boolean, val battente: Boolean
 
 object CostruttoreMesh {
 
-    private val PIETRA = Color(0.52f, 0.51f, 0.47f, 1f)
-    private val PIETRA_MURO = Color(0.60f, 0.59f, 0.55f, 1f)
-    private val PIETRA_CIMA = Color(0.30f, 0.30f, 0.29f, 1f)
-    private val PIETRA_VOLTA = Color(0.38f, 0.37f, 0.35f, 1f)
-    private val LEGNO = Color(0.40f, 0.25f, 0.15f, 1f)
-    private val FERRO = Color(0.20f, 0.20f, 0.21f, 1f)
+    /**
+     * Quante caselle copre una ripetizione della texture.
+     *
+     * Le immagini sono larghe il doppio di quanto sono alte, e i muri
+     * sono alti una casella: due caselle in orizzontale per una in
+     * verticale tengono le pietre nelle giuste proporzioni invece di
+     * schiacciarle.
+     */
+    private const val PASSO_ORIZZONTALE = 2f
+    private const val PASSO_VERTICALE = 1f
 
     /**
      * Un tratto di muro gia' misurato.
@@ -60,7 +64,9 @@ object CostruttoreMesh {
         val nx: Float, val nz: Float,
         val rientro: Float,
         val spessore: Float,
-        val facciaEsterna: Boolean
+        val facciaEsterna: Boolean,
+        /** Quanto muro si e' percorso fin qui: e' la u della texture. */
+        val u0: Float, val u1: Float
     )
 
     /** Il taglio in testa a un muro: chiude lo spessore dove il muro finisce. */
@@ -82,6 +88,7 @@ object CostruttoreMesh {
      */
     fun costruisci(
         m: Modulo,
+        materiali: Materiali,
         aperture: List<Apertura> = apertureLibere(m),
         fuoriOccupato: (Int, Int) -> Boolean = { _, _ -> false }
     ): Model {
@@ -102,6 +109,10 @@ object CostruttoreMesh {
 
         for ((i, poly) in contorni.withIndex()) {
             val b = Pianta.baricentro(poly)
+            // La texture non riparte a ogni segmento: si tiene il conto di
+            // quanto muro si e' percorso, se no le pietre si spezzano ogni
+            // venti centimetri.
+            var percorso = 0f
 
             // Prima si decide segmento per segmento se il muro c'e'.
             val tenuto = BooleanArray(poly.size)
@@ -126,6 +137,7 @@ object CostruttoreMesh {
                 val confine = forme.withIndex().any { (j, g) -> j != i && Pianta.dentro(g, mx, mz) }
                 tenuto[k] = !varco && !confine
 
+                val lungo = kotlin.math.hypot(d[0] - a[0], d[1] - a[1])
                 if (tenuto[k]) {
                     // la casella appena oltre il muro, in coordinate del modulo
                     val fx = kotlin.math.floor(mx + nx * 0.5f).toInt()
@@ -135,9 +147,12 @@ object CostruttoreMesh {
                         a[0] * c, a[1] * c, d[0] * c, d[1] * c, nx, nz,
                         rientro = if (condiviso) t / 2f else 0f,
                         spessore = if (condiviso) t / 2f else t,
-                        facciaEsterna = !condiviso
+                        facciaEsterna = !condiviso,
+                        u0 = percorso / PASSO_ORIZZONTALE,
+                        u1 = (percorso + lungo) / PASSO_ORIZZONTALE
                     )
                 }
+                percorso += lungo
             }
 
             // Poi si chiudono i tagli. Dove il muro finisce, il suo spessore
@@ -167,7 +182,9 @@ object CostruttoreMesh {
 
         val mb = ModelBuilder()
         mb.begin()
-        val attributi = (VertexAttributes.Usage.Position or VertexAttributes.Usage.Normal).toLong()
+        val attributi = (VertexAttributes.Usage.Position or
+            VertexAttributes.Usage.Normal or
+            VertexAttributes.Usage.TextureCoordinates).toLong()
         val su = Vector3(0f, 1f, 0f)
 
         // ATTENZIONE: ModelBuilder.part() chiude la parte precedente e
@@ -176,39 +193,32 @@ object CostruttoreMesh {
         // finisce tutto nell'ultima aperta, col materiale sbagliato.
 
         // 1. pavimento
-        val pav = mb.part("pavimento", GL20.GL_TRIANGLES, attributi, materiale(PIETRA))
+        val pav = mb.part("pavimento", GL20.GL_TRIANGLES, attributi, materiali.pavimento)
         for (poly in contorni) {
             val b = Pianta.baricentro(poly)
             for (k in poly.indices) {
                 val a = poly[k]
                 val d = poly[(k + 1) % poly.size]
-                triangolo(pav,
-                    Vector3(b[0] * c, 0f, b[1] * c),
-                    Vector3(a[0] * c, 0f, a[1] * c),
-                    Vector3(d[0] * c, 0f, d[1] * c),
-                    su)
+                orizzontale(pav, b, a, d, 0f, su)
             }
         }
 
         // 2. soffitto: stesso poligono del pavimento, tre metri piu' su e
         //    rivolto in giu'. Senza, di un sotterraneo si vede il cielo.
-        val sof = mb.part("soffitto", GL20.GL_TRIANGLES, attributi, materiale(PIETRA_VOLTA))
+        val sof = mb.part("soffitto", GL20.GL_TRIANGLES, attributi, materiali.volta)
         val giu = Vector3(0f, -1f, 0f)
         for (poly in contorni) {
             val b = Pianta.baricentro(poly)
             for (k in poly.indices) {
                 val a = poly[k]
                 val d = poly[(k + 1) % poly.size]
-                triangolo(sof,
-                    Vector3(b[0] * c, h, b[1] * c),
-                    Vector3(d[0] * c, h, d[1] * c),
-                    Vector3(a[0] * c, h, a[1] * c),
-                    giu)
+                orizzontale(sof, b, d, a, h, giu)
             }
         }
 
         // 3. facce dei muri
-        val mur = mb.part("muri", GL20.GL_TRIANGLES, attributi, materiale(PIETRA_MURO))
+        val mur = mb.part("muri", GL20.GL_TRIANGLES, attributi, materiali.muro)
+        val altoTex = h / c / PASSO_VERTICALE
         for (s in tratti) {
             val dentro = Vector3(-s.nx, 0f, -s.nz)
             val ix = s.ax - s.nx * s.rientro; val iz = s.az - s.nz * s.rientro
@@ -216,17 +226,19 @@ object CostruttoreMesh {
             // la faccia interna c'e' sempre: e' quella che si vede da qui
             quadrato(mur,
                 Vector3(ix, 0f, iz), Vector3(jx, 0f, jz),
-                Vector3(jx, h, jz), Vector3(ix, h, iz), dentro)
+                Vector3(jx, h, jz), Vector3(ix, h, iz), dentro,
+                s.u0, s.u1, altoTex)
             if (!s.facciaEsterna) continue
             val ex = s.nx * s.spessore; val ez = s.nz * s.spessore
             quadrato(mur,
                 Vector3(jx + ex, 0f, jz + ez), Vector3(ix + ex, 0f, iz + ez),
                 Vector3(ix + ex, h, iz + ez), Vector3(jx + ex, h, jz + ez),
-                Vector3(s.nx, 0f, s.nz))
+                Vector3(s.nx, 0f, s.nz),
+                s.u1, s.u0, altoTex)
         }
 
         // 4. stipiti: la testa dei muri tagliati
-        val sti = mb.part("stipiti", GL20.GL_TRIANGLES, attributi, materiale(PIETRA_MURO))
+        val sti = mb.part("stipiti", GL20.GL_TRIANGLES, attributi, materiali.muro)
         for (p in stipiti) {
             val bx = p.x - p.nx * p.rientro; val bz = p.z - p.nz * p.rientro
             val ex = p.nx * p.spessore; val ez = p.nz * p.spessore
@@ -235,24 +247,26 @@ object CostruttoreMesh {
             val lungo = Vector3(-p.nz, 0f, p.nx)
             quadrato(sti,
                 Vector3(bx, 0f, bz), Vector3(bx + ex, 0f, bz + ez),
-                Vector3(bx + ex, h, bz + ez), Vector3(bx, h, bz), lungo)
+                Vector3(bx + ex, h, bz + ez), Vector3(bx, h, bz), lungo,
+                0f, p.spessore / c / PASSO_ORIZZONTALE, h / c / PASSO_VERTICALE)
         }
 
         // 5. cime dei muri, per quando si guardera' dall'alto
-        val cim = mb.part("cime", GL20.GL_TRIANGLES, attributi, materiale(PIETRA_CIMA))
+        val cim = mb.part("cime", GL20.GL_TRIANGLES, attributi, materiali.cima)
         for (s in tratti) {
             val ix = s.ax - s.nx * s.rientro; val iz = s.az - s.nz * s.rientro
             val jx = s.bx - s.nx * s.rientro; val jz = s.bz - s.nz * s.rientro
             val ex = s.nx * s.spessore; val ez = s.nz * s.spessore
             quadrato(cim,
                 Vector3(ix, h, iz), Vector3(jx, h, jz),
-                Vector3(jx + ex, h, jz + ez), Vector3(ix + ex, h, iz + ez), su)
+                Vector3(jx + ex, h, jz + ez), Vector3(ix + ex, h, iz + ez), su,
+                s.u0, s.u1, s.spessore / c / PASSO_VERTICALE)
         }
 
         // 6. architravi: il varco toglie il muro per tutta l'altezza, ma la
         //    porta e' alta due metri e mezzo. Senza architrave sopra ogni
         //    porta resta un buco che da' sul nulla.
-        val arc = mb.part("architravi", GL20.GL_TRIANGLES, attributi, materiale(PIETRA_MURO))
+        val arc = mb.part("architravi", GL20.GL_TRIANGLES, attributi, materiali.muro)
         for (a in aperture.filter { it.stretta }) {
             val k = m.connettori[a.indice]
             val v = Pianta.varco(k, true)
@@ -275,7 +289,7 @@ object CostruttoreMesh {
         }
 
         // 7. porte: un battente nel varco, cosi' si vede che di la' non si passa
-        val por = mb.part("porte", GL20.GL_TRIANGLES, attributi, materiale(LEGNO))
+        val por = mb.part("porte", GL20.GL_TRIANGLES, attributi, materiali.legno)
         for (a in aperture.filter { it.battente }) {
             val k = m.connettori[a.indice]
             val v = Pianta.varco(k, true)
@@ -290,7 +304,7 @@ object CostruttoreMesh {
 
         // 8. le bande di ferro: due strisce bastano a far leggere il
         //    battente come una porta invece che come un pannello marrone
-        val fer = mb.part("ferramenta", GL20.GL_TRIANGLES, attributi, materiale(FERRO))
+        val fer = mb.part("ferramenta", GL20.GL_TRIANGLES, attributi, materiali.ferro)
         for (a in aperture.filter { it.battente }) {
             val k = m.connettori[a.indice]
             val v = Pianta.varco(k, true)
@@ -370,19 +384,35 @@ object CostruttoreMesh {
      * tutti, quello di un triangolo avvolto al contrario che sparisce
      * senza dire niente.
      */
-    private fun materiale(c: Color) = Material(
-        ColorAttribute.createDiffuse(c),
-        IntAttribute.createCullFace(GL20.GL_NONE)
-    )
+    private fun vertice(p: Vector3, n: Vector3, u: Float, v: Float) =
+        MeshPartBuilder.VertexInfo().setPos(p).setNor(n).setUV(u, v)
 
-    private fun vertice(p: Vector3, n: Vector3) =
-        MeshPartBuilder.VertexInfo().setPos(p).setNor(n)
-
-    private fun triangolo(b: MeshPartBuilder, a: Vector3, c: Vector3, d: Vector3, n: Vector3) {
-        b.triangle(vertice(a, n), vertice(c, n), vertice(d, n))
+    /**
+     * Un triangolo di pavimento o di soffitto: la texture segue le
+     * coordinate del piano, cosi' due caselle vicine continuano il
+     * disegno invece di ricominciarlo da capo.
+     */
+    private fun orizzontale(
+        b: MeshPartBuilder,
+        centro: FloatArray, a: FloatArray, d: FloatArray,
+        y: Float, n: Vector3
+    ) {
+        val c = Misure.CASELLA
+        fun v(p: FloatArray) = vertice(
+            Vector3(p[0] * c, y, p[1] * c), n,
+            p[0] / PASSO_ORIZZONTALE, p[1] / PASSO_VERTICALE
+        )
+        b.triangle(v(centro), v(a), v(d))
     }
 
-    private fun quadrato(b: MeshPartBuilder, p0: Vector3, p1: Vector3, p2: Vector3, p3: Vector3, n: Vector3) {
-        b.rect(vertice(p0, n), vertice(p1, n), vertice(p2, n), vertice(p3, n))
+    private fun quadrato(
+        b: MeshPartBuilder,
+        p0: Vector3, p1: Vector3, p2: Vector3, p3: Vector3, n: Vector3,
+        u0: Float = 0f, u1: Float = 1f, v: Float = 1f
+    ) {
+        b.rect(
+            vertice(p0, n, u0, v), vertice(p1, n, u1, v),
+            vertice(p2, n, u1, 0f), vertice(p3, n, u0, 0f)
+        )
     }
 }

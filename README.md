@@ -87,6 +87,23 @@ JSON. Quando servira' portare dentro pezzi modellati a mano — arredi,
 mostri — si usera' **glTF**, che e' aperto e lo legge qualunque
 programma di modellazione.
 
+### Le texture
+
+Quattro sole: pietra da muro, pietrisco da pavimento, legno, ferro. Le
+originali stanno in [`res/`](res); quelle che usa il gioco sono in
+[`content/texture/`](content/texture), ridotte a 1024x512 e in JPEG —
+772 KB in tutto invece di 4,5 MB, che su un telefono si sentono.
+
+Si ripetono ogni **due caselle in orizzontale e una in verticale**,
+perche' le immagini sono larghe il doppio di quanto sono alte e cosi' le
+pietre restano nelle giuste proporzioni invece di schiacciarsi. Il
+pavimento si specchia invece di ripetersi: i bordi combaciano quasi, e
+la specchiatura toglie di mezzo la cucitura senza chiedere niente a chi
+le ha disegnate.
+
+Se un file manca, il gioco parte lo stesso a tinta unita. Non e' un
+vezzo: un asset che non si carica deve degradare, non piantare.
+
 ### I moduli del progetto
 
 ```
