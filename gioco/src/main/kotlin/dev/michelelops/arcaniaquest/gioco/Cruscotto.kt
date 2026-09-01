@@ -2,6 +2,7 @@ package dev.michelelops.arcaniaquest.gioco
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
+import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.Pixmap
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.BitmapFont
@@ -15,9 +16,6 @@ import dev.michelelops.arcaniaquest.regole.Esplorazione
 import dev.michelelops.arcaniaquest.regole.Famiglia
 import dev.michelelops.arcaniaquest.regole.Lato
 
-/** Una riga di dati: a sinistra cosa e', a destra quanto vale. */
-data class Voce(val etichetta: String, val valore: String)
-
 /** Tutto quello che al cruscotto serve sapere per disegnare un fotogramma. */
 class StatoHud(
     val dungeon: Dungeon,
@@ -27,7 +25,6 @@ class StatoHud(
     val verso: Lato,
     val seme: String,
     val stanza: String,
-    val famiglia: String,
     val mappaGrande: Boolean,
     val messaggio: String,
     /** Il seme che si sta battendo, o null se non si sta scrivendo. */
@@ -56,7 +53,6 @@ class Cruscotto : Disposable {
     var visibile = true
 
     // Una tavolozza sola: cambiarla qui cambia tutta l'interfaccia.
-    private val pece = Color(0.043f, 0.047f, 0.051f, 1f)
     private val fondo = Color(0.07f, 0.075f, 0.08f, 0.95f)
     private val incisione = Color(0.145f, 0.15f, 0.145f, 1f)
     private val rilievo = Color(0.26f, 0.25f, 0.21f, 1f)
@@ -90,12 +86,13 @@ class Cruscotto : Disposable {
         batch.projectionMatrix = proiezione
         batch.begin()
 
-        // Niente fondo a tutto schermo: la scena e' gia' stata disegnata
-        // nel suo riquadro, e coprirla sarebbe il modo piu' rapido di
-        // ritrovarsi con una vista nera senza capire perche'.
-        // Nella barra della vista, che e' quella che si guarda sempre,
-        // finiscono le tre cose che servono a raccontare dove si e': la
-        // stanza, la casella col verso, e il seme per rifare la partita.
+        // Attenzione a non dipingere un fondo su tutto lo schermo: la scena
+        // e' gia' stata disegnata nel suo riquadro, e coprirla darebbe una
+        // vista nera senza nessun errore che lo spieghi.
+        //
+        // Nella barra della vista, che e' quella sotto gli occhi tutto il
+        // tempo, vanno le tre cose che dicono dove si e': la stanza, la
+        // casella col verso, e il seme per rifare la stessa partita.
         val coda = if (stato.unSoloModulo) "" else "     seme ${stato.seme}"
         cornice(t.vista, "VISTA IN PRIMA PERSONA",
             "${stato.stanza}     ${stato.x}, ${stato.z}  ${stato.verso.name.lowercase()}$coda")
@@ -288,56 +285,84 @@ class Cruscotto : Disposable {
 
         val viste = e.celleViste()
         if (viste.isEmpty()) return
+        val q = inquadra(d, viste, stato, grande)
 
-        val x0 = viste.minOf { it.x }; val x1 = viste.maxOf { it.x }
-        val z0 = viste.minOf { it.z }; val z1 = viste.maxOf { it.z }
-        val colonne = (x1 - x0 + 1).coerceAtLeast(1)
-        val righe = (z1 - z0 + 1).coerceAtLeast(1)
+        forbici(d)
+        caselleDellaMappa(q, viste, stato, e)
+        porteDellaMappa(q, viste, stato)
+        freccia(q.sx(stato.x) + q.lato / 2f, q.sy(stato.z) + q.lato / 2f, q.lato * 0.34f, stato.verso)
+        niForbici()
+    }
 
-        // La casella non si rimpicciolisce all'infinito, se no non si
-        // capisce piu' niente: sotto la misura minima la mappa scorre
-        // dietro al gruppo invece di stringersi. E nemmeno si ingrandisce
-        // all'infinito: due caselle scoperte non devono diventare due
-        // francobolli giganti in mezzo al pannello.
+    /** Dove cade sullo schermo la casella (x, z) del sotterraneo, e quanto e' grande. */
+    private class Inquadratura(val ox: Float, val oz: Float, val lato: Float) {
+        fun sx(x: Int) = ox + x * lato
+        /** La z del sotterraneo cresce verso sud, la y dello schermo verso l'alto: si ribalta. */
+        fun sy(z: Int) = oz - (z + 1) * lato
+    }
+
+    /**
+     * Sceglie quanto disegnare grandi le caselle e dove metterle.
+     *
+     * La casella non si rimpicciolisce all'infinito, se no non si capisce
+     * piu' niente: quando quello che si e' scoperto non ci sta piu' nel
+     * pannello, la mappa smette di stringersi e comincia a scorrere dietro
+     * al gruppo, che resta al centro. E nemmeno si ingrandisce
+     * all'infinito: due caselle appena viste non devono diventare due
+     * francobolli giganti in mezzo al vuoto.
+     */
+    private fun inquadra(d: Riq, viste: Collection<Cella>, stato: StatoHud, grande: Boolean): Inquadratura {
+        val x0 = viste.minOf { it.x }
+        val z0 = viste.minOf { it.z }
+        val colonne = (viste.maxOf { it.x } - x0 + 1).coerceAtLeast(1)
+        val righe = (viste.maxOf { it.z } - z0 + 1).coerceAtLeast(1)
+
         val minima = if (grande) 7f * s else 5f * s
         val massima = if (grande) 40f * s else 22f * s
         val lato = minOf(massima, maxOf(minima, minOf(d.w / colonne, d.h / righe)))
-        val larghi = colonne * lato <= d.w
-        val alti = righe * lato <= d.h
-        val ox = if (larghi) d.cx - colonne * lato / 2f - x0 * lato
-                 else d.cx - (stato.x + 0.5f) * lato
-        val oz = if (alti) d.cy + righe * lato / 2f + z0 * lato
-                 else d.cy + (stato.z + 0.5f) * lato
 
-        fun sx(x: Int) = ox + x * lato
-        fun sy(z: Int) = oz - (z + 1) * lato
+        val ciSta = colonne * lato <= d.w
+        val ciStaInAltezza = righe * lato <= d.h
+        return Inquadratura(
+            ox = if (ciSta) d.cx - colonne * lato / 2f - x0 * lato
+                 else d.cx - (stato.x + 0.5f) * lato,
+            oz = if (ciStaInAltezza) d.cy + righe * lato / 2f + z0 * lato
+                 else d.cy + (stato.z + 0.5f) * lato,
+            lato = lato
+        )
+    }
 
-        forbici(d)
+    /** Le caselle viste: piene se ci si e' camminati, sbiadite se solo intraviste. */
+    private fun caselleDellaMappa(q: Inquadratura, viste: Collection<Cella>, stato: StatoHud, e: Esplorazione) {
         for (c in viste) {
-            val p = stato.dungeon.pezzoIn(c.x, c.z)
-            val colore = when (p?.modulo?.famiglia) {
+            val colore = when (stato.dungeon.pezzoIn(c.x, c.z)?.modulo?.famiglia) {
                 Famiglia.CORRIDOIO -> andito
                 else -> sala
             }
-            val cella = Riq(sx(c.x), sy(c.z), lato - 1f, lato - 1f)
-            rett(cella, if (e.calpestata(c)) colore else Color(colore.r, colore.g, colore.b, 0.45f))
+            rett(
+                Riq(q.sx(c.x), q.sy(c.z), q.lato - 1f, q.lato - 1f),
+                if (e.calpestata(c)) colore else Color(colore.r, colore.g, colore.b, 0.45f)
+            )
         }
-        // le porte: chiuse in ruggine, aperte in verde, e solo dove il
-        // gruppo e' gia' passato a vederle
+    }
+
+    /** Le porte gia' incontrate: chiuse in ruggine, aperte in verde. */
+    private fun porteDellaMappa(q: Inquadratura, viste: Collection<Cella>, stato: StatoHud) {
         for (porta in stato.dungeon.passaggi.filter { it.conBattente }) {
             if (porta.a !in viste && porta.b !in viste) continue
-            val mx = (sx(porta.a.x) + sx(porta.b.x)) / 2f
-            val my = (sy(porta.a.z) + sy(porta.b.z)) / 2f
-            val spesso = maxOf(2f, lato * 0.22f)
-            val orizzontale = porta.a.z == porta.b.z
+            val mx = (q.sx(porta.a.x) + q.sx(porta.b.x)) / 2f
+            val my = (q.sy(porta.a.z) + q.sy(porta.b.z)) / 2f
+            val spesso = maxOf(2f, q.lato * 0.22f)
+            // una porta fra due caselle affiancate si disegna in piedi, e viceversa
+            val fraCaselleAffiancate = porta.a.z == porta.b.z
             rett(
-                if (orizzontale) Riq(mx + lato / 2f - spesso / 2f, my + lato * 0.2f, spesso, lato * 0.6f)
-                else Riq(mx + lato * 0.2f, my + lato / 2f - spesso / 2f, lato * 0.6f, spesso),
+                if (fraCaselleAffiancate)
+                    Riq(mx + q.lato / 2f - spesso / 2f, my + q.lato * 0.2f, spesso, q.lato * 0.6f)
+                else
+                    Riq(mx + q.lato * 0.2f, my + q.lato / 2f - spesso / 2f, q.lato * 0.6f, spesso),
                 if (porta.aperta) verde else ruggine
             )
         }
-        freccia(sx(stato.x) + lato / 2f, sy(stato.z) + lato / 2f, lato * 0.34f, stato.verso)
-        niForbici()
     }
 
     /** Il gruppo sulla mappa: un triangolo che guarda dove guarda lui. */
@@ -393,7 +418,7 @@ class Cruscotto : Disposable {
     /** Ritaglia il disegno dentro un riquadro: la mappa non deve sbordare. */
     private fun forbici(r: Riq) {
         batch.flush()
-        Gdx.gl.glEnable(com.badlogic.gdx.graphics.GL20.GL_SCISSOR_TEST)
+        Gdx.gl.glEnable(GL20.GL_SCISSOR_TEST)
         val sx = Gdx.graphics.backBufferWidth.toFloat() / Gdx.graphics.width
         val sy = Gdx.graphics.backBufferHeight.toFloat() / Gdx.graphics.height
         Gdx.gl.glScissor((r.x * sx).toInt(), (r.y * sy).toInt(), (r.w * sx).toInt(), (r.h * sy).toInt())
@@ -401,7 +426,7 @@ class Cruscotto : Disposable {
 
     private fun niForbici() {
         batch.flush()
-        Gdx.gl.glDisable(com.badlogic.gdx.graphics.GL20.GL_SCISSOR_TEST)
+        Gdx.gl.glDisable(GL20.GL_SCISSOR_TEST)
     }
 
     override fun dispose() {

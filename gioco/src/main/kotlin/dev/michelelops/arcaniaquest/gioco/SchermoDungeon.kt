@@ -119,9 +119,20 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
         sorte = conSorte
         dungeon = avvio.modulo?.let { Dungeon.unoSolo(catalogo[it], sorte.seme) }
             ?: generatore.genera(sorte, avvio.quantiPezzi)
-
         if (avvio.porteSpalancate) dungeon.passaggi.forEach { it.apri() }
 
+        piazzaIlGruppo()
+        rifaiTutteLeMesh()
+        messaggio = ""
+        // il titolo porta il seme, e deve seguirlo anche quando lo si cambia
+        // da dentro il gioco
+        Gdx.graphics.setTitle("ArcaniaQuest - seme ${sorte.semeScritto()}")
+
+        if (avvio.dallAlto) Gdx.app.log("arcania", "\n" + dungeon.disegno())
+        if (avvio.dallAlto || avvio.pienaLuce) elencaBattenti()
+    }
+
+    private fun piazzaIlGruppo() {
         gruppo = avvio.posa?.let { Gruppo(dungeon, it.first, it.second, it.third) }
             ?: Gruppo.dallaPartenza(dungeon)
 
@@ -130,20 +141,14 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
             for (pezzo in dungeon.pezzi) for (c in pezzo.celleMondo()) esplorazione.vedi(c)
         }
         guardatiAttorno()
-        messaggio = ""
+    }
 
-        if (avvio.dallAlto) Gdx.app.log("arcania", "\n" + dungeon.disegno())
-
-        // il titolo segue il seme: cambiandolo dentro il gioco, prima
-        // restava quello di partenza e non tornava piu' con il pannello
-        Gdx.graphics.setTitle("ArcaniaQuest - seme ${sorte.semeScritto()}")
-
+    private fun rifaiTutteLeMesh() {
         rifaiAmbiente()
         for (m in modelli.values) m.dispose()
-        modelli.clear(); istanze.clear()
+        modelli.clear()
+        istanze.clear()
         for (p in dungeon.pezzi) rifaiPezzo(p)
-
-        if (avvio.dallAlto || avvio.pienaLuce) elencaBattenti()
     }
 
     /** Dove finisce ogni battente, in metri di mondo. Solo diagnostica. */
@@ -197,6 +202,10 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
         }
     }
 
+    /**
+     * Le luci. Due modi soli: a giorno, che serve a controllare la mesh, e
+     * a lume di torcia, che e' come si gioca.
+     */
     private fun rifaiAmbiente() {
         ambiente = Environment().apply {
             if (avvio.dallAlto || avvio.pienaLuce) {
@@ -207,19 +216,21 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
                 set(ColorAttribute(ColorAttribute.Fog, 0.015f, 0.018f, 0.024f, 1f))
                 add(DirectionalLight().set(0.24f, 0.25f, 0.29f, -0.4f, -0.9f, -0.25f))
                 add(torciaDelGruppo)
-                // Le torce a muro dei pezzi che le hanno. Il numero di luci
-                // che il motore accetta e' piccolo, quindi si tengono solo
-                // quelle vicine al gruppo: le altre non si vedrebbero.
-                for (p in dungeon.pezzi) for (a in p.modulo.arredi.filter { it.tipo == "torcia" }) {
-                    add(PointLight().set(
-                        Color(1f, 0.62f, 0.28f, 1f),
-                        (a.x + p.ox + 0.5f) * Misure.CASELLA,
-                        Misure.ALTEZZA_MURO * 0.62f,
-                        (a.z + p.oz + 0.5f) * Misure.CASELLA,
-                        Misure.FORZA_TORCIA_A_MURO
-                    ))
-                }
+                torceAMuro().forEach { add(it) }
             }
+        }
+    }
+
+    /** Le torce appese ai muri, una per ogni arredo del catalogo che ne dichiara una. */
+    private fun torceAMuro(): List<PointLight> = dungeon.pezzi.flatMap { p ->
+        p.modulo.arredi.filter { it.tipo == "torcia" }.map { a ->
+            PointLight().set(
+                Color(1f, 0.62f, 0.28f, 1f),
+                (a.x + p.ox + 0.5f) * Misure.CASELLA,
+                Misure.ALTEZZA_MURO * 0.62f,
+                (a.z + p.oz + 0.5f) * Misure.CASELLA,
+                Misure.FORZA_TORCIA_A_MURO
+            )
         }
     }
 
@@ -264,15 +275,27 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
         Gdx.gl.glClearColor(0.02f, 0.022f, 0.026f, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT)
 
-        // La scena non prende piu' tutto lo schermo: sta nel suo riquadro,
-        // e le cornici le stanno attorno invece che sopra.
-        val r = if (cruscotto?.visibile == true) dentroLaVista() else Riq(0f, 0f, l, a)
+        disegnaScena(if (cruscotto?.visibile == true) dentroLaVista() else Riq(0f, 0f, l, a))
+        cruscotto?.disegna(telaio, statoHud())
+
+        fotogrammi++
+        if (avvio.scattaDopo > 0 && fotogrammi >= avvio.scattaDopo) scatta()
+    }
+
+    /**
+     * Disegna il sotterraneo dentro [r] e non su tutto lo schermo: il
+     * cruscotto gli sta attorno come una cornice, non sopra. Il ritaglio
+     * si fa con la finestra di OpenGL, che vuole i pixel veri del
+     * fotogramma: su uno schermo a punti fitti sono piu' di quelli con cui
+     * si misura la finestra, da qui le due scale.
+     */
+    private fun disegnaScena(r: Riq) {
         camera.viewportWidth = r.w
         camera.viewportHeight = r.h
         camera.update()
 
-        val sx = Gdx.graphics.backBufferWidth.toFloat() / l
-        val sy = Gdx.graphics.backBufferHeight.toFloat() / a
+        val sx = Gdx.graphics.backBufferWidth.toFloat() / telaio.larghezza
+        val sy = Gdx.graphics.backBufferHeight.toFloat() / telaio.altezza
         Gdx.gl.glViewport((r.x * sx).toInt(), (r.y * sy).toInt(), (r.w * sx).toInt(), (r.h * sy).toInt())
         Gdx.gl.glEnable(GL20.GL_DEPTH_TEST)
 
@@ -285,10 +308,6 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
 
         Gdx.gl.glViewport(0, 0, Gdx.graphics.backBufferWidth, Gdx.graphics.backBufferHeight)
         Gdx.gl.glDisable(GL20.GL_DEPTH_TEST)
-        cruscotto?.disegna(telaio, statoHud())
-
-        fotogrammi++
-        if (avvio.scattaDopo > 0 && fotogrammi >= avvio.scattaDopo) scatta()
     }
 
     /**
@@ -351,7 +370,6 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
             x = gruppo.x, z = gruppo.z, verso = gruppo.verso,
             seme = sorte.semeScritto(),
             stanza = p?.let { "${it.modulo.id} ${it.modulo.nome}" } ?: "fuori dal sotterraneo",
-            famiglia = p?.modulo?.famiglia?.name?.lowercase() ?: "-",
             mappaGrande = mappaGrande,
             messaggio = messaggio,
             semeInScrittura = semeScritto,
@@ -430,8 +448,19 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) agisciSullaPorta()
 
+        val mossa = mossaTenutaGiu() ?: return
+        if (gruppo.esegui(mossa)) {
+            guardatiAttorno()
+            ultimoRifiuto = Rifiuto.NIENTE
+            messaggio = ""
+        } else {
+            spiegaIlRifiuto()
+        }
+    }
+
+    private fun mossaTenutaGiu(): Mossa? {
         val giu = { k: Int -> Gdx.input.isKeyPressed(k) }
-        val mossa = when {
+        return when {
             giu(Input.Keys.UP) || giu(Input.Keys.W) -> Mossa.AVANTI
             giu(Input.Keys.DOWN) || giu(Input.Keys.S) -> Mossa.INDIETRO
             giu(Input.Keys.LEFT) || giu(Input.Keys.Q) -> Mossa.VOLTA_SINISTRA
@@ -439,22 +468,22 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
             giu(Input.Keys.A) -> Mossa.PASSO_SINISTRO
             giu(Input.Keys.D) -> Mossa.PASSO_DESTRO
             else -> null
-        } ?: return
-
-        if (gruppo.esegui(mossa)) {
-            guardatiAttorno()
-            ultimoRifiuto = Rifiuto.NIENTE
-            messaggio = ""
-            return
         }
-        if (gruppo.rifiuto != ultimoRifiuto) {
-            ultimoRifiuto = gruppo.rifiuto
-            messaggio = when (gruppo.rifiuto) {
-                Rifiuto.PORTA_CHIUSA -> "La porta e' chiusa. SPAZIO per aprirla."
-                Rifiuto.MURO -> "Di la' c'e' un altro pezzo, ma non ci si passa."
-                Rifiuto.ROCCIA -> "Pietra viva."
-                else -> ""
-            }
+    }
+
+    /**
+     * Il perche' il passo non e' andato, ma una volta sola: tenendo premuto
+     * il tasto contro un muro, il messaggio si riscriverebbe sessanta volte
+     * al secondo.
+     */
+    private fun spiegaIlRifiuto() {
+        if (gruppo.rifiuto == ultimoRifiuto) return
+        ultimoRifiuto = gruppo.rifiuto
+        messaggio = when (gruppo.rifiuto) {
+            Rifiuto.PORTA_CHIUSA -> "La porta e' chiusa. SPAZIO per aprirla."
+            Rifiuto.MURO -> "Di la' c'e' un altro pezzo, ma non ci si passa."
+            Rifiuto.ROCCIA -> "Pietra viva."
+            else -> ""
         }
     }
 
