@@ -28,10 +28,10 @@ data class Piazzato(
 /**
  * Il passaggio fra due caselle di moduli diversi.
  *
- * Un varco senza battente nasce gia' aperto e non si richiude: e' un
- * buco nel muro. Una porta nasce chiusa, e una volta aperta **resta
- * aperta** — il gruppo non torna sui propri passi per trovarsi la strada
- * sbarrata di nuovo.
+ * Un varco senza battente nasce gia' aperto e non si chiude: e' un buco
+ * nel muro, non c'e' niente da tirare. Una porta invece nasce chiusa, e
+ * quello che il gruppo le fa **resta fatto** — aperta rimane aperta
+ * finche' qualcuno non la richiude, e non si riapre da sola.
  */
 class Porta(
     val a: Cella,
@@ -48,6 +48,16 @@ class Porta(
         aperta = true
         return true
     }
+
+    /** Un buco nel muro non si chiude: non c'e' niente da tirare. */
+    fun chiudi(): Boolean {
+        if (!conBattente || !aperta) return false
+        aperta = false
+        return true
+    }
+
+    /** Ritorna true se lo stato e' cambiato davvero. */
+    fun commuta(): Boolean = if (aperta) chiudi() else apri()
 
     fun collega(x: Int, z: Int): Boolean =
         (a.x == x && a.z == z) || (b.x == x && b.z == z)
@@ -115,6 +125,16 @@ class Dungeon(
     fun apri(x: Int, z: Int, verso: Lato): Porta? {
         val porta = portaFra(x, z, verso) ?: return null
         return if (porta.apri()) porta else null
+    }
+
+    /**
+     * Apre o chiude la porta davanti, a seconda di com'e' adesso.
+     * Ritorna la porta solo se qualcosa e' cambiato: su un varco senza
+     * battente non succede niente.
+     */
+    fun commuta(x: Int, z: Int, verso: Lato): Porta? {
+        val porta = portaFra(x, z, verso) ?: return null
+        return if (porta.commuta()) porta else null
     }
 
     val porteInTutto: Int get() = passaggi.count { it.conBattente }

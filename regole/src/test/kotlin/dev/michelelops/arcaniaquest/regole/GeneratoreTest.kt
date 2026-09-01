@@ -111,7 +111,7 @@ class GeneratoreTest {
     }
 
     @Test
-    fun `una porta chiusa ferma, e una volta aperta resta aperta`() {
+    fun `una porta si apre, resta aperta, e si lascia richiudere`() {
         val d = semi.map { dungeon(it) }.firstOrNull { it.porteInTutto > 0 }
         assertNotNull(d, "nessun seme ha prodotto una porta: la prova non direbbe niente")
 
@@ -123,10 +123,37 @@ class GeneratoreTest {
         assertNotNull(d.apri(da.x, da.z, verso))
         assertEquals(Ostacolo.NIENTE, d.ostacolo(da.x, da.z, verso))
 
-        // aprirla di nuovo non fa niente, e soprattutto non si richiude
+        // aperta resta aperta: aprirla di nuovo non cambia niente, e non
+        // si richiude da sola nemmeno guardandola dall'altra parte
         assertTrue(d.apri(da.x, da.z, verso) == null)
         assertEquals(Ostacolo.NIENTE, d.ostacolo(da.x, da.z, verso))
         assertEquals(Ostacolo.NIENTE, d.ostacolo(porta.b.x, porta.b.z, verso.opposto))
+
+        // ma il gruppo puo' richiuderla, e allora torna a sbarrare
+        assertNotNull(d.commuta(da.x, da.z, verso))
+        assertEquals(Ostacolo.PORTA_CHIUSA, d.ostacolo(da.x, da.z, verso))
+        assertEquals(Ostacolo.PORTA_CHIUSA, d.ostacolo(porta.b.x, porta.b.z, verso.opposto))
+
+        // e si riapre dall'altro lato: una porta non ha un verso giusto
+        assertNotNull(d.commuta(porta.b.x, porta.b.z, verso.opposto))
+        assertEquals(Ostacolo.NIENTE, d.ostacolo(da.x, da.z, verso))
+    }
+
+    @Test
+    fun `un varco senza battente non si chiude`() {
+        val d = semi.map { dungeon(it) }
+            .firstOrNull { it.passaggi.any { p -> !p.conBattente } }
+        assertNotNull(d, "nessun seme ha prodotto un varco senza battente")
+
+        val varco = d.passaggi.first { !it.conBattente }
+        val da = varco.a
+        val verso = Lato.entries.first { da.x + it.dx == varco.b.x && da.z + it.dz == varco.b.z }
+
+        // e' un buco nel muro: non c'e' niente da tirare
+        assertTrue(varco.aperta)
+        assertTrue(d.commuta(da.x, da.z, verso) == null)
+        assertTrue(varco.aperta)
+        assertEquals(Ostacolo.NIENTE, d.ostacolo(da.x, da.z, verso))
     }
 
     @Test

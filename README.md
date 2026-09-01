@@ -55,9 +55,12 @@ all'altra senza niente in mezzo. Gli attacchi rimasti liberi alla fine
 vengono murati, cosi' il sotterraneo non si affaccia mai sul nulla.
 
 Dove due pezzi si incastrano nasce un **passaggio**. Se almeno uno dei
-due connettori ha il battente, li' c'e' una porta: parte chiusa, si apre
-con un tasto, e **una volta aperta resta aperta** — il gruppo non torna
-sui propri passi per ritrovarsi la strada sbarrata.
+due connettori ha il battente, li' c'e' una porta: parte chiusa, e
+`SPAZIO` la apre o la richiude a seconda di com'e'. Quello che il gruppo
+le fa **resta fatto**: una porta aperta non si riapre da sola e non si
+richiude alle spalle: se la si ritrova chiusa, e' perche' qualcuno l'ha
+chiusa. Un varco senza battente invece e' un buco nel muro, e li' non
+c'e' niente da tirare.
 
 Il catalogo sta in [`content/moduli/catalogo.json`](content/moduli/catalogo.json),
 il formato è spiegato in [`doc/MODULI.md`](doc/MODULI.md).
@@ -206,7 +209,7 @@ controllare la resa senza doverla guardare: se una modifica rompe la
 geometria, si vede in un'immagine invece che in una sessione di gioco.
 
 Comandi: `↑ ↓` avanti e indietro, `← →` volta di 90°, `A D` passo
-laterale, `SPAZIO` apre la porta davanti, `M` la mappa a tutto schermo,
+laterale, `SPAZIO` apre e chiude la porta davanti, `M` la mappa a tutto schermo,
 `R` monta un sotterraneo nuovo, `F1` nasconde l'interfaccia.
 
 ### L'interfaccia

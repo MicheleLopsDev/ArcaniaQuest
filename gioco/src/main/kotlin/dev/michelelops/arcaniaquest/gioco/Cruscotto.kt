@@ -267,7 +267,7 @@ class Cruscotto : Disposable {
         }
         // la riga in fondo: le due azioni che non stanno nella crociera
         val fondoRiga = griglia.y1 - lh * 3f - 1f * s
-        val azioni = "SPAZIO apri     M mappa     R nuovo     F1 nascondi"
+        val azioni = "SPAZIO apri e chiudi     M mappa     R nuovo     F1 nascondi"
         testo(azioni, d.x, maxOf(d.y + font.lineHeight * 0.62f, fondoRiga), spenta, 0.62f)
     }
 

@@ -3,6 +3,7 @@ package dev.michelelops.arcaniaquest.gioco
 import dev.michelelops.arcaniaquest.regole.Dungeon
 import dev.michelelops.arcaniaquest.regole.Lato
 import dev.michelelops.arcaniaquest.regole.Ostacolo
+import dev.michelelops.arcaniaquest.regole.Porta
 
 /** Cosa puo' fare il gruppo. Sei mosse, non una di piu'. */
 enum class Mossa { AVANTI, INDIETRO, PASSO_SINISTRO, PASSO_DESTRO, VOLTA_SINISTRA, VOLTA_DESTRA }
@@ -58,10 +59,13 @@ class Gruppo(private val dungeon: Dungeon, x: Int, z: Int, verso: Lato) {
         }
     }
 
-    /** Apre quello che c'e' davanti, se c'e' qualcosa da aprire. */
-    fun apri(): Boolean {
-        if (inMovimento) return false
-        return dungeon.apri(x, z, verso) != null
+    /**
+     * Apre o chiude quello che c'e' davanti. Ritorna la porta solo se
+     * qualcosa e' cambiato, cosi' chi chiama sa anche cosa dire.
+     */
+    fun agisci(): Porta? {
+        if (inMovimento) return null
+        return dungeon.commuta(x, z, verso)
     }
 
     private fun passo(dove: Lato): Boolean {

@@ -428,7 +428,7 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
             messaggio = "Sotterraneo nuovo: seme ${sorte.semeScritto()}."
             return
         }
-        if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) apri()
+        if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) agisciSullaPorta()
 
         val giu = { k: Int -> Gdx.input.isKeyPressed(k) }
         val mossa = when {
@@ -463,13 +463,13 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
      * rifare la mesh del pezzo che disegnava il battente: quello e' l'unico
      * a cui e' cambiato qualcosa.
      */
-    private fun apri() {
-        val porta = dungeon.apri(gruppo.x, gruppo.z, gruppo.verso) ?: return
+    private fun agisciSullaPorta() {
+        val porta = gruppo.agisci() ?: return
         porta.proprietario?.let { (chiave, _) ->
             dungeon.pezzi.firstOrNull { it.chiave == chiave }?.let { rifaiPezzo(it) }
         }
         guardatiAttorno()
-        messaggio = "La porta si apre."
+        messaggio = if (porta.aperta) "La porta si apre." else "La porta si chiude."
     }
 
     private fun scatta() {
