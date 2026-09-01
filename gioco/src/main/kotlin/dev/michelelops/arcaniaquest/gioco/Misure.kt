@@ -24,8 +24,7 @@ object Misure {
     const val DURATA_PASSO = 0.22f
     const val DURATA_VOLTA = 0.20f
 
-    /** Il buio comincia a mangiarsi le cose dopo questa distanza. */
-    const val INIZIO_BUIO = 4f
+    /** Oltre questa distanza il buio si e' mangiato tutto: non si disegna piu'. */
     const val FONDO_BUIO = 26f
 
     /**

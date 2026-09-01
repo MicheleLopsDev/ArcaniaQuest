@@ -7,8 +7,6 @@ data class Riq(val x: Float, val y: Float, val w: Float, val h: Float) {
     val cx: Float get() = x + w / 2f
     val cy: Float get() = y + h / 2f
 
-    fun ritira(quanto: Float) = Riq(x + quanto, y + quanto, w - quanto * 2f, h - quanto * 2f)
-
     /** La fetta orizzontale da [da] a [a], in frazione della larghezza. */
     fun fetta(da: Float, a: Float, gap: Float = 0f) =
         Riq(x + w * da + (if (da > 0f) gap / 2f else 0f), y,
