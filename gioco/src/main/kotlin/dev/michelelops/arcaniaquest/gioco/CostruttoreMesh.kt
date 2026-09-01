@@ -315,7 +315,7 @@ object CostruttoreMesh {
             for (y in floatArrayOf(ALTEZZA_PORTA * 0.24f, ALTEZZA_PORTA * 0.76f)) {
                 BoxShapeBuilder.build(
                     fer,
-                    anta(k, c, a.spalancata, y, LARGHEZZA_PORTA * 0.9f * c, 0.16f, sp)
+                    anta(k, c, a.spalancata, y, LARGHEZZA_PORTA * 0.9f * c, ALTEZZA_BANDA, sp)
                 )
             }
         }
@@ -341,6 +341,17 @@ object CostruttoreMesh {
      */
     private const val SPESSORE_AL_CONFINE = 0.05f
     private const val ALTEZZA_PORTA = 2.1f
+
+    /**
+     * Quanto e' alta una banda di ferro.
+     *
+     * Sedici centimetri erano troppo pochi: sullo schermo diventano una
+     * ventina di pixel, e in venti pixel un ferro battuto lavorato non ci
+     * sta — o lo si riduce a poltiglia o a rumore, a seconda del filtro.
+     * A trenta centimetri il disegno ha lo spazio per farsi vedere, e una
+     * fascia larga su una porta di due metri sta bene lo stesso.
+     */
+    private const val ALTEZZA_BANDA = 0.30f
 
     /**
      * Il centro del battente: **sul filo del confine** fra le due caselle.

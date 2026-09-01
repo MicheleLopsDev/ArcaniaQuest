@@ -97,18 +97,26 @@ Le originali stanno in [`res/`](res); quelle che usa il gioco sono in
 poco piu' di un mega invece di cinque e mezzo — su un telefono si
 sentono.
 
-Quattro sono in uso: pietra da muro, una muratura piu' fitta per gli
-architravi sopra le porte, pietrisco da pavimento e legno. Il **metallo
-battuto** e' sul disco ma non e' montato da nessuna parte: e' un pannello
-ornato, e le bande di una porta sono alte sedici centimetri — qualunque
-immagine ci si spalmi sopra o si schiaccia o si riduce a una fetta senza
-disegno. Le bande sono a tinta unita, perche' a quella misura quello che
-le fa leggere e' lo stacco col legno, non il dettaglio. Il metallo
-aspetta una superficie grande: una grata, un portone, un forziere.
+Pietra da muro, una muratura piu' fitta per gli architravi sopra le
+porte, pietrisco da pavimento, legno, e una fascia di ferro battuto per
+le bande delle porte.
 
-Una cosa imparata a mie spese: **`offsetU` e `scaleU` sul materiale non
-servono a niente** con lo shader di serie di libGDX, che non li guarda.
-Le coordinate della texture si danno ai vertici, e basta.
+La fascia e' un caso a se' e merita due righe, perche' e' costata tre
+strade sbagliate. **Non si campiona una porzione di texture dal
+materiale**: `offsetU` e `scaleU` esistono ma lo shader di serie di
+libGDX non li guarda, e si finisce a cambiare numeri che non cambiano
+niente. La strada giusta e' preparare **un'immagine gia' a forma di
+banda**: si ritaglia dal pannello ornato una striscia con le proporzioni
+della fascia e la si salva a parte, cosi' le coordinate di serie, che
+vanno da zero a uno, cadono giuste.
+
+Due trappole lungo quella strada. La prima: le coordinate delle facce di
+una scatola sono **ruotate di novanta gradi**, quindi la striscia va
+salvata coricata, se no arriva stirata per il verso sbagliato. La
+seconda: sedici centimetri di altezza non bastano — a schermo sono venti
+pixel, e in venti pixel un ferro lavorato o diventa poltiglia (col
+mipmap) o rumore (senza). Le bande sono alte trenta centimetri, e a
+quella misura il disegno si vede anche da due caselle di distanza.
 
 Si ripetono ogni **due caselle in orizzontale e una in verticale**,
 perche' le immagini sono larghe il doppio di quanto sono alte e cosi' le
