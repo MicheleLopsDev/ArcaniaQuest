@@ -28,6 +28,7 @@ class Materiali : Disposable {
     val pavimento: Material
     val volta: Material
     val muro: Material
+    val architrave: Material
     val cima: Material
     val legno: Material
     val ferro: Material
@@ -39,18 +40,35 @@ class Materiali : Disposable {
         // specchiatura toglie di mezzo la cucitura senza chiedere niente
         // a chi le ha disegnate.
         val pietraMuro = carica("muri", Texture.TextureWrap.Repeat, Texture.TextureWrap.ClampToEdge)
+        val pietraStretta = carica("muri_porte", Texture.TextureWrap.Repeat, Texture.TextureWrap.ClampToEdge)
         val pietraSuolo = carica("pavimento", Texture.TextureWrap.MirroredRepeat, Texture.TextureWrap.MirroredRepeat)
         val assi = carica("legno", Texture.TextureWrap.Repeat, Texture.TextureWrap.ClampToEdge)
-        val battuto = carica("metallo", Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat)
 
         pavimento = fatto(pietraSuolo, Color(0.95f, 0.94f, 0.92f, 1f))
         // il soffitto e' la stessa pietra del pavimento, ma piu' spenta:
         // di la' non arriva quasi mai la luce e non deve rubare l'occhio
         volta = fatto(pietraSuolo, Color(0.62f, 0.61f, 0.60f, 1f))
         muro = fatto(pietraMuro, Color(1f, 1f, 1f, 1f))
+        // Sopra le porte va una muratura piu' fitta: l'architrave e' un
+        // pezzo corto e alto, e i blocchi larghi del muro normale ci
+        // starebbero dentro uno e mezzo.
+        architrave = fatto(pietraStretta ?: pietraMuro, Color(0.92f, 0.91f, 0.90f, 1f))
         cima = fatto(pietraMuro, Color(0.55f, 0.55f, 0.54f, 1f))
         legno = fatto(assi, Color(1f, 1f, 1f, 1f))
-        ferro = fatto(battuto, Color(0.85f, 0.85f, 0.88f, 1f))
+        // Le bande delle porte sono senza texture, ed e' una scelta.
+        //
+        // Sono alte sedici centimetri e larghe un metro e mezzo: qualunque
+        // immagine ci si spalmi sopra o si schiaccia o si riduce a una
+        // fetta senza disegno. Ci ho provato in tre modi diversi, e il
+        // risultato era sempre una fascia anonima: quello che fa leggere
+        // una banda di ferro non e' il dettaglio, che a quella misura non
+        // si vede, ma lo stacco netto col legno. Le bande vere del resto
+        // sono profili lisci, non pannelli sbalzati.
+        //
+        // La texture del metallo battuto resta in content/texture/: e' un
+        // pannello ornato e va usata su superfici grandi — grate, portoni,
+        // forzieri — non su una striscia.
+        ferro = fatto(null, Color(0.16f, 0.16f, 0.175f, 1f))
     }
 
     /**
@@ -64,6 +82,10 @@ class Materiali : Disposable {
             ColorAttribute.createDiffuse(tinta),
             IntAttribute.createCullFace(GL20.GL_NONE)
         )
+        // Niente offsetU/scaleU sul materiale: lo shader di serie di
+        // libGDX non li guarda, e chi ci prova si ritrova a cambiare
+        // numeri che non cambiano niente. Le coordinate si danno ai
+        // vertici, quando servono.
         if (t != null) m.set(TextureAttribute.createDiffuse(t))
         return m
     }

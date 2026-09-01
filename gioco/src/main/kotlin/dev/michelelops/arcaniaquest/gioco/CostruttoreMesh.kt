@@ -273,7 +273,7 @@ object CostruttoreMesh {
         // 6. architravi: il varco toglie il muro per tutta l'altezza, ma la
         //    porta e' alta due metri e mezzo. Senza architrave sopra ogni
         //    porta resta un buco che da' sul nulla.
-        val arc = mb.part("architravi", GL20.GL_TRIANGLES, attributi, materiali.muro)
+        val arc = mb.part("architravi", GL20.GL_TRIANGLES, attributi, materiali.architrave)
         for (a in aperture.filter { it.stretta }) {
             val k = m.connettori[a.indice]
             val v = Pianta.varco(k, true)

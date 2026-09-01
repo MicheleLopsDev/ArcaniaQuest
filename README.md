@@ -92,10 +92,23 @@ programma di modellazione.
 
 ### Le texture
 
-Quattro sole: pietra da muro, pietrisco da pavimento, legno, ferro. Le
-originali stanno in [`res/`](res); quelle che usa il gioco sono in
-[`content/texture/`](content/texture), ridotte a 1024x512 e in JPEG —
-772 KB in tutto invece di 4,5 MB, che su un telefono si sentono.
+Le originali stanno in [`res/`](res); quelle che usa il gioco sono in
+[`content/texture/`](content/texture), ridotte a 1024x512 e in JPEG,
+poco piu' di un mega invece di cinque e mezzo — su un telefono si
+sentono.
+
+Quattro sono in uso: pietra da muro, una muratura piu' fitta per gli
+architravi sopra le porte, pietrisco da pavimento e legno. Il **metallo
+battuto** e' sul disco ma non e' montato da nessuna parte: e' un pannello
+ornato, e le bande di una porta sono alte sedici centimetri — qualunque
+immagine ci si spalmi sopra o si schiaccia o si riduce a una fetta senza
+disegno. Le bande sono a tinta unita, perche' a quella misura quello che
+le fa leggere e' lo stacco col legno, non il dettaglio. Il metallo
+aspetta una superficie grande: una grata, un portone, un forziere.
+
+Una cosa imparata a mie spese: **`offsetU` e `scaleU` sul materiale non
+servono a niente** con lo shader di serie di libGDX, che non li guarda.
+Le coordinate della texture si danno ai vertici, e basta.
 
 Si ripetono ogni **due caselle in orizzontale e una in verticale**,
 perche' le immagini sono larghe il doppio di quanto sono alte e cosi' le
