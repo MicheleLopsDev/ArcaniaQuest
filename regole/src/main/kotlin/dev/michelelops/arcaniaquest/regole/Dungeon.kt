@@ -138,67 +138,80 @@ class Dungeon(
     }
 
     val porteInTutto: Int get() = passaggi.count { it.conBattente }
-    val porteAperte: Int get() = passaggi.count { it.conBattente && it.aperta }
 
     /**
      * Il sotterraneo scritto a caratteri, per guardarlo senza aprire una
-     * finestra: un punto dove si cammina, un piu' dove c'e' una porta
-     * chiusa, un apostrofo dove il passaggio e' aperto, una chiocciola
-     * sulla partenza. Serve nei log e nelle prove.
+     * finestra: la pianta, poi i connettori pezzo per pezzo, poi le porte.
+     * Serve nei log e nelle prove.
      */
-    fun disegno(): String {
+    fun disegno(): String = buildString {
         val celle = pezzi.flatMap { it.celleMondo() }
         if (celle.isEmpty()) return "(vuoto)"
-        val x0 = celle.minOf { it.x }; val x1 = celle.maxOf { it.x }
-        val z0 = celle.minOf { it.z }; val z1 = celle.maxOf { it.z }
-        val sb = StringBuilder()
-        sb.append("seme ").append(Sorte.scrivi(seme))
+
+        append("seme ").append(Sorte.scrivi(seme))
             .append("  pezzi ").append(pezzi.size)
             .append("  caselle ").append(caselleInTutto)
             .append("  porte ").append(porteInTutto)
-            .append("  origine ").append(x0).append(",").append(z0)
-            .append(RIGA)
-        for (z in z0..z1) {
-            for (x in x0..x1) {
-                sb.append(
+            .append("  origine ").append(celle.minOf { it.x }).append(",").append(celle.minOf { it.z })
+            .appendLine()
+
+        pianta(celle)
+        connettoriDeiPezzi()
+        elencoDellePorte()
+    }
+
+    /**
+     * La pianta: un punto dove si cammina, un piu' dove c'e' una porta
+     * chiusa, un apice dove il passaggio e' aperto, una chiocciola sulla
+     * partenza, spazio dove c'e' roccia.
+     */
+    private fun StringBuilder.pianta(celle: List<Cella>) {
+        for (z in celle.minOf { it.z }..celle.maxOf { it.z }) {
+            for (x in celle.minOf { it.x }..celle.maxOf { it.x }) {
+                append(
                     when {
-                        partenza.x == x && partenza.z == z -> CHIOCCIOLA
-                        !calpestabile(x, z) -> VUOTO
+                        partenza.x == x && partenza.z == z -> PARTENZA
+                        !calpestabile(x, z) -> PIETRA
                         passaggi.any { it.conBattente && !it.aperta && it.collega(x, z) } -> CHIUSA
                         passaggi.any { it.collega(x, z) } -> APERTA
                         else -> SUOLO
                     }
                 )
             }
-            sb.append(RIGA)
+            appendLine()
         }
+    }
+
+    /** Per ogni pezzo, dove sta e quali dei suoi connettori sono diventati un varco. */
+    private fun StringBuilder.connettoriDeiPezzi() {
         for (p in pezzi) {
-            val aperti = varchiDi(p.chiave).sorted()
-            sb.append(p.chiave.padEnd(8)).append(" a ").append(p.ox).append(",").append(p.oz)
+            val aperti = varchiDi(p.chiave)
+            append(p.chiave.padEnd(8)).append(" a ").append(p.ox).append(",").append(p.oz)
                 .append("   connettori ")
             for ((i, k) in p.modulo.connettori.withIndex()) {
-                sb.append(if (i in aperti) "aperto" else "murato")
+                append(if (i in aperti) "aperto" else "murato")
                     .append("(").append(k.lato.name.lowercase()).append(" ")
                     .append(k.x).append(",").append(k.z).append(") ")
             }
-            sb.append(RIGA)
+            appendLine()
         }
+    }
+
+    private fun StringBuilder.elencoDellePorte() {
         for (p in passaggi.filter { it.conBattente }) {
-            sb.append(if (p.aperta) "aperta " else "chiusa ")
+            append(if (p.aperta) "aperta " else "chiusa ")
                 .append(p.a.x).append(",").append(p.a.z).append("  -  ")
-                .append(p.b.x).append(",").append(p.b.z).append(RIGA)
+                .append(p.b.x).append(",").append(p.b.z).appendLine()
         }
-        return sb.toString()
     }
 
     companion object {
-        // i segni della mappa a caratteri
-        private const val RIGA = "\n"
-        private const val VUOTO = ' '
+        // i segni della pianta a caratteri
+        private const val PIETRA = ' '
         private const val SUOLO = '.'
         private const val CHIUSA = '+'
         private const val APERTA = '"'
-        private const val CHIOCCIOLA = '@'
+        private const val PARTENZA = '@'
 
         /**
          * Un sotterraneo di un pezzo solo, con tutti i varchi aperti sul

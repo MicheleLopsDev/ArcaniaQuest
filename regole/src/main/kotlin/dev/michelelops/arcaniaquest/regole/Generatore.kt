@@ -22,6 +22,36 @@ class Generatore(private val catalogo: Catalogo) {
         val lato: Lato
     )
 
+    /**
+     * I passaggi aperti finora: le porte da una parte, e dall'altra quali
+     * connettori di quale pezzo sono ormai diventati un buco nel muro.
+     */
+    private class Cantiere {
+        val passaggi = mutableListOf<Porta>()
+        val varchi = HashMap<String, MutableSet<Int>>()
+
+        fun eGiaAperto(a: Aperto) = a.indice in (varchi[a.chiave] ?: emptySet())
+
+        /**
+         * Unisce due connettori che si guardano in faccia.
+         *
+         * Il varco si segna da tutte e due le parti, se no da un lato
+         * resta il muro e dall'altro il buco. Il battente invece lo
+         * disegna il solo pezzo [la]: quale dei due sia e' arbitrario, ma
+         * dev'essere uno solo o se ne vedono due sovrapposti.
+         */
+        fun apriVarco(qua: Aperto, la: Aperto, conBattente: Boolean) {
+            varchi.getOrPut(qua.chiave) { mutableSetOf() } += qua.indice
+            varchi.getOrPut(la.chiave) { mutableSetOf() } += la.indice
+            passaggi += Porta(
+                a = qua.cella,
+                b = la.cella,
+                conBattente = conBattente,
+                proprietario = if (conBattente) la.chiave to la.indice else null
+            )
+        }
+    }
+
     fun genera(sorte: Sorte, quantiPezzi: Int = 12): Dungeon {
         require(quantiPezzi >= 1) { "un dungeon ha almeno un pezzo" }
 
@@ -30,8 +60,7 @@ class Generatore(private val catalogo: Catalogo) {
 
         val posati = mutableListOf(primo)
         val occupate = HashSet<Cella>(primo.celleMondo())
-        val passaggi = mutableListOf<Porta>()
-        val varchi = HashMap<String, MutableSet<Int>>()
+        val cantiere = Cantiere()
 
         val frontiera = ArrayDeque<Aperto>()
         frontiera += apertiDi(primo)
@@ -53,26 +82,18 @@ class Generatore(private val catalogo: Catalogo) {
             posati += messo.pezzo
             occupate += messo.pezzo.celleMondo()
 
-            // il varco si apre da tutte e due le parti, altrimenti da un
-            // lato resta un muro e dall'altro un buco
-            varchi.getOrPut(attacco.chiave) { mutableSetOf() } += attacco.indice
-            varchi.getOrPut(messo.pezzo.chiave) { mutableSetOf() } += messo.indice
-
-            val battente = messo.pezzo.modulo.connettori[messo.indice].porta ||
-                connettoreDi(posati, attacco).porta
-            passaggi += Porta(
-                a = attacco.cella,
-                b = vicina,
-                conBattente = battente,
-                // il battente lo disegna il pezzo nuovo: e' arbitrario,
-                // ma dev'essere uno solo o se ne vedono due sovrapposti
-                proprietario = if (battente) messo.pezzo.chiave to messo.indice else null
+            val entrata = Aperto(messo.pezzo.chiave, messo.indice, vicina, attacco.lato.opposto)
+            cantiere.apriVarco(
+                qua = attacco,
+                la = entrata,
+                conBattente = messo.pezzo.modulo.connettori[messo.indice].porta ||
+                    connettoreDi(posati, attacco).porta
             )
 
             frontiera += apertiDi(messo.pezzo).filter { it.indice != messo.indice }
         }
 
-        cuci(posati, frontiera.toList() + avanzati, varchi, passaggi)
+        cuci(posati, frontiera.toList() + avanzati, cantiere)
 
         val partenza = iniziale.partenza
         return Dungeon(
@@ -80,8 +101,8 @@ class Generatore(private val catalogo: Catalogo) {
             pezzi = posati,
             partenza = partenza?.let { Cella(it.x, it.z) } ?: primo.celleMondo().first(),
             versoIniziale = partenza?.verso ?: Lato.NORD,
-            passaggi = passaggi,
-            varchi = varchi
+            passaggi = cantiere.passaggi,
+            varchi = cantiere.varchi
         )
     }
 
@@ -96,38 +117,21 @@ class Generatore(private val catalogo: Catalogo) {
      * un sotterraneo tutto ad albero costringe a rifare sempre la stessa
      * strada a ritroso.
      */
-    private fun cuci(
-        posati: List<Piazzato>,
-        liberi: List<Aperto>,
-        varchi: MutableMap<String, MutableSet<Int>>,
-        passaggi: MutableList<Porta>
-    ) {
+    private fun cuci(posati: List<Piazzato>, liberi: List<Aperto>, cantiere: Cantiere) {
         val perPezzo = posati.associateBy { it.chiave }
         // solo quelli che non sono gia' diventati un varco
-        val aperti = liberi.filter { it.indice !in (varchi[it.chiave] ?: emptySet()) }
+        val aperti = liberi.filterNot { cantiere.eGiaAperto(it) }
         val perCasella = aperti.groupBy { it.cella }
 
         for (a in aperti) {
-            if (a.indice in (varchi[a.chiave] ?: emptySet())) continue
+            if (cantiere.eGiaAperto(a)) continue
             val vicina = Cella(a.cella.x + a.lato.dx, a.cella.z + a.lato.dz)
             val dirimpetto = perCasella[vicina]?.firstOrNull {
-                it.chiave != a.chiave &&
-                    it.lato == a.lato.opposto &&
-                    it.indice !in (varchi[it.chiave] ?: emptySet())
+                it.chiave != a.chiave && it.lato == a.lato.opposto && !cantiere.eGiaAperto(it)
             } ?: continue
 
-            varchi.getOrPut(a.chiave) { mutableSetOf() } += a.indice
-            varchi.getOrPut(dirimpetto.chiave) { mutableSetOf() } += dirimpetto.indice
-
-            val kA = perPezzo.getValue(a.chiave).modulo.connettori[a.indice]
-            val kB = perPezzo.getValue(dirimpetto.chiave).modulo.connettori[dirimpetto.indice]
-            val battente = kA.porta || kB.porta
-            passaggi += Porta(
-                a = a.cella,
-                b = vicina,
-                conBattente = battente,
-                proprietario = if (battente) dirimpetto.chiave to dirimpetto.indice else null
-            )
+            fun conPorta(x: Aperto) = perPezzo.getValue(x.chiave).modulo.connettori[x.indice].porta
+            cantiere.apriVarco(qua = a, la = dirimpetto, conBattente = conPorta(a) || conPorta(dirimpetto))
         }
     }
 
