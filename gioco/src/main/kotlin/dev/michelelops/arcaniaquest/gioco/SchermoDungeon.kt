@@ -255,6 +255,13 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
                 )
             }
         }
+        if (avvio.dallAlto || avvio.pienaLuce) {
+            Gdx.app.log(
+                "arcania",
+                "torce: ${fuochi.size} su ${dungeon.caselleInTutto} caselle" +
+                    "  (una ogni ${"%.1f".format(dungeon.caselleInTutto.toFloat() / maxOf(1, fuochi.size))})"
+            )
+        }
     }
 
     /**

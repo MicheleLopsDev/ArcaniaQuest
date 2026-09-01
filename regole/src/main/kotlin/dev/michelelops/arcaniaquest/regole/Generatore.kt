@@ -98,7 +98,7 @@ class Generatore(private val catalogo: Catalogo) {
         val partenza = iniziale.partenza
         return Dungeon(
             seme = sorte.seme,
-            pezzi = posati,
+            pezzi = Fiaccolatura.illumina(posati, sorte.seme),
             partenza = partenza?.let { Cella(it.x, it.z) } ?: primo.celleMondo().first(),
             versoIniziale = partenza?.verso ?: Lato.NORD,
             passaggi = cantiere.passaggi,
