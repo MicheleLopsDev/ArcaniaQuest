@@ -58,7 +58,8 @@ fun main(args: Array<String>) {
         porteSpalancate = args.any { it == "--porteaperte" },
         mappaAperta = args.any { it == "--mappa" },
         tuttoScoperto = args.any { it == "--tuttoscoperto" },
-        chiediIlSeme = opzione("chiediseme")
+        chiediIlSeme = opzione("chiediseme"),
+        pienaLuce = args.any { it == "--pienaluce" }
     )
 
     val config = Lwjgl3ApplicationConfiguration().apply {

@@ -51,7 +51,13 @@ data class Avvio(
     /** Segna come gia' visto tutto il sotterraneo: serve solo a fotografarlo. */
     val tuttoScoperto: Boolean = false,
     /** Parte col riquadro del seme gia' aperto, per fotografarlo. */
-    val chiediIlSeme: String? = null
+    val chiediIlSeme: String? = null,
+    /**
+     * Prima persona ma a giorno: niente buio e niente nebbia.
+     * Serve a distinguere «e' buio» da «e' rotto», che al lume di torcia
+     * sono la stessa cosa.
+     */
+    val pienaLuce: Boolean = false
 )
 
 /**
@@ -92,7 +98,7 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
 
         camera = PerspectiveCamera(Misure.CAMPO_VISIVO, Gdx.graphics.width.toFloat(), Gdx.graphics.height.toFloat()).apply {
             near = 0.15f
-            far = if (avvio.dallAlto) 1200f else Misure.FONDO_BUIO
+            far = if (avvio.dallAlto) 1200f else if (avvio.pienaLuce) 120f else Misure.FONDO_BUIO
         }
         batch = ModelBatch()
         if (!avvio.dallAlto) cruscotto = Cruscotto()
@@ -163,7 +169,7 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
 
     private fun rifaiAmbiente() {
         ambiente = Environment().apply {
-            if (avvio.dallAlto) {
+            if (avvio.dallAlto || avvio.pienaLuce) {
                 set(ColorAttribute(ColorAttribute.AmbientLight, 0.55f, 0.56f, 0.58f, 1f))
                 add(DirectionalLight().set(0.5f, 0.5f, 0.5f, -0.4f, -0.9f, -0.25f))
             } else {
