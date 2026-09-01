@@ -1,0 +1,671 @@
+<title>Passo e Volta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=Silkscreen:wght@400;700&family=Spectral:ital,wght@0,300;0,400;1,300&display=swap">
+
+<style>
+/* Mondo visivo unico e voluto: pietra, buio, luce di torcia.
+   Nessun tema chiaro — ogni colore e' dichiarato, niente e' ereditato dall'host. */
+:root{
+  --pece:#0A0B0C;
+  --pietra:#191A18;
+  --pietra-2:#232522;
+  --incisione:#070806;
+  --rilievo:#33352F;
+  --pergamena:#C9C3B2;
+  --pergamena-2:#8C8778;
+  --ambra:#E0913F;
+  --ambra-scura:#7A4A1C;
+  --ruggine:#7E3B27;
+  --verde:#5E7F5A;
+}
+*{box-sizing:border-box}
+html{color-scheme:dark}
+body{
+  margin:0;background:var(--pece);color:var(--pergamena);
+  font-family:"Spectral",Georgia,serif;font-size:16.5px;line-height:1.62;font-weight:300;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1000px;margin:0 auto;padding:44px 20px 80px;display:flex;flex-direction:column;gap:40px}
+
+.eyebrow{
+  font-family:"Silkscreen",monospace;font-size:10.5px;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--ambra);margin:0 0 12px;
+}
+h1{
+  font-family:"IM Fell English SC","Spectral",serif;font-weight:400;
+  font-size:clamp(34px,6vw,54px);line-height:1.05;margin:0 0 14px;text-wrap:balance;
+  color:var(--pergamena);
+}
+h2{
+  font-family:"IM Fell English SC","Spectral",serif;font-weight:400;font-size:24px;
+  margin:0 0 4px;color:var(--pergamena);
+}
+p{margin:0 0 12px;max-width:66ch}
+.dek{font-size:18px;color:var(--pergamena-2);max-width:60ch;margin:0}
+.dek b{color:var(--pergamena);font-weight:400}
+section{display:flex;flex-direction:column;gap:16px}
+.sec-head{border-top:1px solid var(--rilievo);padding-top:16px}
+.sec-head p{margin:0;color:var(--pergamena-2);max-width:66ch}
+
+/* ---------- il mobile ---------- */
+.cabinet{
+  background:linear-gradient(180deg,var(--pietra-2),var(--pietra));
+  border:1px solid var(--incisione);
+  box-shadow:inset 0 1px 0 var(--rilievo), 0 24px 60px -34px #000;
+  border-radius:4px;padding:14px;display:flex;flex-direction:column;gap:14px;
+}
+.screen{
+  position:relative;background:#000;
+  border:1px solid var(--incisione);
+  box-shadow:inset 0 0 0 1px #000, inset 0 0 40px 6px rgba(0,0,0,.9);
+  border-radius:2px;overflow:hidden;
+}
+#vp{display:block;width:100%;height:clamp(240px,44vw,420px);touch-action:none;cursor:default}
+.msg{
+  position:absolute;left:0;right:0;bottom:0;
+  padding:8px 12px;background:linear-gradient(0deg,rgba(0,0,0,.86),rgba(0,0,0,0));
+  font-family:"Silkscreen",monospace;font-size:10.5px;letter-spacing:.09em;
+  color:var(--ambra);min-height:30px;
+  transition:opacity .25s;
+}
+.msg.mute{opacity:0}
+
+.console{
+  display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center;
+}
+@media (max-width:640px){
+  .console{grid-template-columns:1fr;justify-items:center;gap:14px}
+}
+
+/* bussola */
+.dial{
+  width:104px;height:104px;flex:0 0 auto;position:relative;
+  background:radial-gradient(circle at 40% 34%,var(--pietra-2),var(--incisione));
+  border:1px solid var(--rilievo);border-radius:50%;
+  box-shadow:inset 0 2px 6px #000;
+}
+.dial svg{position:absolute;inset:0;width:100%;height:100%}
+.rosa{transition:transform .16s ease-out;transform-origin:50% 50%}
+
+/* pulsantiera */
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;max-width:330px;width:100%;margin:0 auto}
+.pad button{
+  font-family:"Silkscreen",monospace;font-size:9.5px;letter-spacing:.06em;
+  color:var(--pergamena-2);
+  background:linear-gradient(180deg,var(--pietra-2),#141513);
+  border:1px solid var(--incisione);
+  box-shadow:inset 0 1px 0 var(--rilievo);
+  border-radius:2px;padding:11px 4px 9px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  transition:color .12s,background .12s;
+}
+.pad button .gl{font-size:15px;line-height:1;color:var(--pergamena)}
+.pad button:hover{color:var(--ambra);background:linear-gradient(180deg,#2B2D28,#1A1B18)}
+.pad button:hover .gl{color:var(--ambra)}
+.pad button:active,.pad button.giu{
+  background:#0F100E;box-shadow:inset 0 2px 5px #000;color:var(--ambra);
+}
+.pad button:focus-visible{outline:2px solid var(--ambra);outline-offset:2px}
+
+/* mappa */
+.map{
+  flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:6px;
+  background:var(--incisione);border:1px solid var(--rilievo);border-radius:2px;padding:8px;
+}
+#mini{display:block;image-rendering:pixelated}
+.map span{
+  font-family:"Silkscreen",monospace;font-size:8.5px;letter-spacing:.16em;color:var(--pergamena-2);
+}
+
+.tasti{
+  display:flex;flex-wrap:wrap;gap:6px 18px;
+  font-family:"Silkscreen",monospace;font-size:9.5px;letter-spacing:.08em;
+  color:var(--pergamena-2);
+}
+.tasti b{color:var(--ambra);font-weight:400}
+
+.note{border-left:2px solid var(--ambra-scura);padding:2px 0 2px 16px;color:var(--pergamena-2)}
+.note strong{color:var(--pergamena);font-weight:400}
+.code{
+  background:#0E0F0D;border:1px solid var(--rilievo);border-radius:2px;padding:16px 18px;
+  overflow-x:auto;font-family:"Silkscreen",ui-monospace,monospace;font-size:11px;
+  line-height:1.95;color:var(--pergamena-2);letter-spacing:.02em;
+}
+.code b{color:var(--ambra);font-weight:400}
+.code i{color:var(--pergamena-2);opacity:.6;font-style:normal}
+footer{
+  border-top:1px solid var(--rilievo);padding-top:16px;
+  font-family:"Silkscreen",monospace;font-size:9.5px;letter-spacing:.14em;color:var(--pergamena-2);
+}
+@media (prefers-reduced-motion:reduce){
+  .rosa{transition:none}
+}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">ArcaniaQuest · modulo 25 · prototipo giocabile</p>
+    <h1>Passo e Volta</h1>
+    <p class="dek">La sala ovale come la vedresti dal gioco: un passo alla volta, una casella alla
+      volta, e le svolte solo di 90 gradi. <b>Nessuna telecamera libera</b> — è la regola che rende
+      leggibile un dungeon a moduli, ed è quella che ha reso giocabile <i>Eye of the Beholder</i>
+      su macchine molto più povere di un telefono.</p>
+  </header>
+
+  <div class="cabinet">
+    <div class="screen">
+      <canvas id="vp" tabindex="0" aria-label="Vista in prima persona del modulo 25"></canvas>
+      <div class="msg" id="msg">Sala Ovale</div>
+    </div>
+
+    <div class="console">
+      <div class="dial" aria-hidden="true">
+        <svg viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="41" fill="none" stroke="#33352F" stroke-width="1"/>
+          <g class="rosa" id="rosa">
+            <path d="M50 12 L55 44 L50 40 L45 44 Z" fill="#E0913F"/>
+            <path d="M50 88 L45 56 L50 60 L55 56 Z" fill="#5A5C53"/>
+            <path d="M12 50 L44 45 L40 50 L44 55 Z" fill="#5A5C53"/>
+            <path d="M88 50 L56 55 L60 50 L56 45 Z" fill="#5A5C53"/>
+            <text x="50" y="10" text-anchor="middle" font-family="Silkscreen,monospace"
+                  font-size="9" fill="#C9C3B2">N</text>
+          </g>
+          <circle cx="50" cy="50" r="3.2" fill="#0A0B0C" stroke="#33352F"/>
+        </svg>
+      </div>
+
+      <div class="pad">
+        <button type="button" data-az="volta-sx"><span class="gl">↰</span>volta</button>
+        <button type="button" data-az="avanti"><span class="gl">▲</span>avanti</button>
+        <button type="button" data-az="volta-dx"><span class="gl">↱</span>volta</button>
+        <button type="button" data-az="passo-sx"><span class="gl">◄</span>passo</button>
+        <button type="button" data-az="indietro"><span class="gl">▼</span>indietro</button>
+        <button type="button" data-az="passo-dx"><span class="gl">►</span>passo</button>
+      </div>
+
+      <div class="map">
+        <canvas id="mini" width="132" height="88" aria-label="Mappa del modulo"></canvas>
+        <span>modulo 25</span>
+      </div>
+    </div>
+
+    <p class="tasti">
+      <span><b>↑ ↓</b> avanti / indietro</span>
+      <span><b>← →</b> volta di 90°</span>
+      <span><b>A D</b> passo laterale</span>
+    </p>
+  </div>
+
+  <section>
+    <div class="sec-head">
+      <h2>Perché a caselle</h2>
+      <p>Non è nostalgia: il passo discreto è quello che tiene in piedi tutto il resto.</p>
+    </div>
+    <div class="code">
+<b>posizione</b>   = una casella (x, z) + un verso fra quattro   <i>// 4 byte in salvataggio</i>
+<b>collisione</b>  = la casella accanto e' calpestabile? si / no  <i>// niente fisica</i>
+<b>agguato</b>     = il mostro entra nella casella davanti        <i>// niente pathfinding continuo</i>
+<b>disegno</b>     = solo il modulo corrente e i confinanti       <i>// 3 moduli su schermo, mai 30</i>
+<b>salvataggio</b> = casella + verso + stato porte                <i>// riprendi identico</i>
+    </div>
+    <p class="note"><strong>La conseguenza vera:</strong> con la telecamera bloccata sulla griglia
+      non esiste il problema dei muri da tagliare, non esiste il tremolio della camera, e su Android
+      il gioco disegna a schermo qualche centinaio di poligoni invece di un dungeon intero. È lo
+      stesso motivo per cui EOB girava su un 286.</p>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Cosa manca a questo prototipo</h2>
+      <p>Perché sia chiaro dove finisce il mock e dove comincia il lavoro.</p>
+    </div>
+    <p class="note">Qui i muri sono volumi grezzi senza texture, la porta a est è chiusa perché
+      di là ci sarebbe il modulo successivo, e il gruppo è una sola pedina senza scheda. Quello che
+      il prototipo dimostra davvero è la <strong>grammatica del movimento</strong>: quanto è grande
+      una casella rispetto all'altezza dei muri, quanto deve durare un passo perché non dia
+      fastidio, e quanto si vede di una stanza ovale stando dentro una griglia quadrata.</p>
+  </section>
+
+  <footer>ArcaniaQuest · prototipo di interfaccia · modulo 25</footer>
+</div>
+
+<script>
+"use strict";
+(function(){
+
+/* ============================================================
+   1. IL MODULO
+   x verso est, y in alto, z verso sud. Unita' = casella (3 m).
+   ============================================================ */
+const ALT = 1.0;    // altezza dei muri, in caselle
+const SP  = 0.25;   // spessore dei muri
+
+function rettArrotondato(x0,z0,w,d,r,seg){
+  const pts=[];
+  const ang=[
+    [x0+w-r,z0+r,-Math.PI/2,0],[x0+w-r,z0+d-r,0,Math.PI/2],
+    [x0+r,z0+d-r,Math.PI/2,Math.PI],[x0+r,z0+r,Math.PI,Math.PI*1.5]
+  ];
+  for(const [cx,cz,a0,a1] of ang){
+    for(let i=0;i<=seg;i++){
+      const a=a0+(a1-a0)*i/seg, p=[cx+Math.cos(a)*r, cz+Math.sin(a)*r];
+      const u=pts[pts.length-1];
+      if(!u || Math.hypot(u[0]-p[0],u[1]-p[1])>1e-6) pts.push(p);
+    }
+  }
+  return pts;
+}
+function suddividi(poly,passo){
+  const out=[];
+  for(let i=0;i<poly.length;i++){
+    const a=poly[i], b=poly[(i+1)%poly.length];
+    const n=Math.max(1,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/passo));
+    for(let k=0;k<n;k++){ const t=k/n; out.push([a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t]); }
+  }
+  return out;
+}
+
+const CAMERA    = suddividi(rettArrotondato(0,0,3,4,0.9,8), 0.22);
+const CORRIDOIO = suddividi([[3,1],[6,1],[6,2],[3,2]], 0.22);
+
+const APERTURE=[
+  {x0:2.7,x1:3.3,z0:1.0,z1:2.0},
+  {x0:5.7,x1:6.3,z0:1.0,z1:2.0},
+  {x0:-0.3,x1:0.3,z0:2.0,z1:3.0}
+];
+const dentroApertura=(x,z)=>APERTURE.some(a=>x>a.x0&&x<a.x1&&z>a.z0&&z<a.z1);
+
+// Caselle calpestabili: 6 colonne x 4 righe. 1 = ci si cammina.
+const MAPPA=[
+  "111000",
+  "111111",
+  "111000",
+  "111000"
+];
+const LARG=6, PROF=4;
+const calpestabile=(x,z)=> x>=0 && z>=0 && x<LARG && z<PROF && MAPPA[z][x]==="1";
+
+const PORTE=[
+  {cx:6.0, cz:1.5, sz:0.9, lato:"est",   x:5, z:1, dir:[1,0]},
+  {cx:0.0, cz:2.5, sz:0.9, lato:"ovest", x:0, z:2, dir:[-1,0]}
+];
+const TORCE=[
+  {p:[1.5,0.62,3.62], c:[1.0,0.56,0.22], i:1.7},
+  {p:[4.62,0.62,1.12], c:[1.0,0.56,0.22], i:1.7}
+];
+
+/* ============================================================
+   2. GEOMETRIA
+   ============================================================ */
+const COL={
+  pavimento:[0.46,0.45,0.42], muroInt:[0.56,0.55,0.51],
+  muroEst:[0.40,0.40,0.37],  muroCima:[0.33,0.33,0.31],
+  legno:[0.34,0.21,0.13],    ferro:[0.17,0.18,0.19], fuoco:[1,0.74,0.36]
+};
+const bar=p=>{const c=[0,0,0];for(const q of p){c[0]+=q[0];c[1]+=q[1];c[2]+=q[2];}
+  return [c[0]/p.length,c[1]/p.length,c[2]/p.length];};
+function norm(p){
+  const [a,b,c]=p;
+  const u=[b[0]-a[0],b[1]-a[1],b[2]-a[2]], v=[c[0]-a[0],c[1]-a[1],c[2]-a[2]];
+  const n=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]];
+  const l=Math.hypot(n[0],n[1],n[2])||1;
+  return [n[0]/l,n[1]/l,n[2]/l];
+}
+const facc=(pts,col,o)=>Object.assign({pts,col,n:norm(pts),c:bar(pts)},o||{});
+function scatola(cx,cy,cz,sx,sy,sz,col,o){
+  const X0=cx-sx/2,X1=cx+sx/2,Y0=cy-sy/2,Y1=cy+sy/2,Z0=cz-sz/2,Z1=cz+sz/2;
+  const v=[[X0,Y0,Z0],[X1,Y0,Z0],[X1,Y0,Z1],[X0,Y0,Z1],
+           [X0,Y1,Z0],[X1,Y1,Z0],[X1,Y1,Z1],[X0,Y1,Z1]];
+  return [[4,5,6,7],[3,2,1,0],[0,1,5,4],[2,3,7,6],[1,2,6,5],[3,0,4,7]]
+    .map(i=>facc(i.map(k=>v[k]),col,o));
+}
+function costruisci(){
+  const facce=[], fughe=[];
+  for(const poly of [CAMERA,CORRIDOIO]){
+    let bx=0,bz=0; for(const p of poly){bx+=p[0];bz+=p[1];}
+    bx/=poly.length; bz/=poly.length;
+    for(let i=0;i<poly.length;i++){
+      const a=poly[i], b=poly[(i+1)%poly.length];
+      facce.push(facc([[bx,0,bz],[a[0],0,a[1]],[b[0],0,b[1]]],COL.pavimento,{tipo:'pav'}));
+      const mx=(a[0]+b[0])/2, mz=(a[1]+b[1])/2;
+      if(dentroApertura(mx,mz)) continue;
+      let nx=b[1]-a[1], nz=-(b[0]-a[0]);
+      const l=Math.hypot(nx,nz)||1; nx/=l; nz/=l;
+      if((mx-bx)*nx+(mz-bz)*nz<0){nx=-nx;nz=-nz;}
+      const A=[a[0],0,a[1]], B=[b[0],0,b[1]];
+      const Ae=[a[0]+nx*SP,0,a[1]+nz*SP], Be=[b[0]+nx*SP,0,b[1]+nz*SP];
+      const su=p=>[p[0],ALT,p[2]];
+      facce.push(facc([A,B,su(B),su(A)],COL.muroInt,{tipo:'muro'}));
+      facce.push(facc([Be,Ae,su(Ae),su(Be)],COL.muroEst,{tipo:'muro'}));
+      facce.push(facc([su(A),su(B),su(Be),su(Ae)],COL.muroCima,{tipo:'muro'}));
+    }
+    for(let x=0;x<=6;x++) fuga(fughe,poly,[x,-1],[x,6]);
+    for(let z=0;z<=4;z++) fuga(fughe,poly,[-1,z],[7,z]);
+  }
+  for(const p of PORTE){
+    facce.push(...scatola(p.cx,0.42,p.cz,0.22,0.84,p.sz,COL.legno,{tipo:'porta'}));
+    facce.push(...scatola(p.cx,0.28,p.cz,0.26,0.06,p.sz*0.95,COL.ferro,{tipo:'porta'}));
+    facce.push(...scatola(p.cx,0.62,p.cz,0.26,0.06,p.sz*0.95,COL.ferro,{tipo:'porta'}));
+    facce.push(...scatola(p.cx,0.92,p.cz,0.36,0.16,p.sz+0.24,COL.muroCima,{tipo:'porta'}));
+  }
+  for(const t of TORCE){
+    facce.push(...scatola(t.p[0],t.p[1]-0.07,t.p[2],0.08,0.22,0.08,COL.ferro,{tipo:'prop'}));
+    facce.push(...scatola(t.p[0],t.p[1]+0.10,t.p[2],0.12,0.15,0.12,COL.fuoco,{tipo:'prop',viva:true}));
+  }
+  return {facce,fughe};
+}
+function fuga(out,poly,p0,p1){
+  let bx=0,bz=0; for(const p of poly){bx+=p[0];bz+=p[1];}
+  bx/=poly.length; bz/=poly.length;
+  let t0=0,t1=1;
+  const dx=p1[0]-p0[0], dz=p1[1]-p0[1];
+  for(let i=0;i<poly.length;i++){
+    const a=poly[i], b=poly[(i+1)%poly.length];
+    let nx=b[1]-a[1], nz=-(b[0]-a[0]);
+    if((a[0]-bx)*nx+(a[1]-bz)*nz<0){nx=-nx;nz=-nz;}
+    const den=nx*dx+nz*dz, num=nx*(a[0]-p0[0])+nz*(a[1]-p0[1]);
+    if(Math.abs(den)<1e-9){ if(num<0) return; continue; }
+    const t=num/den;
+    if(den>0){ if(t>t1) return; if(t>t0) t0=t; }
+    else     { if(t<t0) return; if(t<t1) t1=t; }
+  }
+  if(t1-t0<0.03) return;
+  out.push([[p0[0]+dx*t0,0.006,p0[1]+dz*t0],[p0[0]+dx*t1,0.006,p0[1]+dz*t1]]);
+}
+const SCENA = costruisci();
+
+/* ============================================================
+   3. RESA
+   ============================================================ */
+const DIR_LUCE=(function(){const v=[-0.4,0.88,-0.26],l=Math.hypot(v[0],v[1],v[2]);
+  return [v[0]/l,v[1]/l,v[2]/l];})();
+const AMBIENTE=[0.13,0.145,0.175];
+const CHIAVE=[0.13,0.135,0.15];
+const NEBBIA=[0.016,0.019,0.024];
+let fiamma=1;
+
+function tinta(col,n,c,occhio){
+  const nd=Math.max(0,n[0]*DIR_LUCE[0]+n[1]*DIR_LUCE[1]+n[2]*DIR_LUCE[2]);
+  let r=col[0]*(AMBIENTE[0]+CHIAVE[0]*nd);
+  let g=col[1]*(AMBIENTE[1]+CHIAVE[1]*nd);
+  let b=col[2]*(AMBIENTE[2]+CHIAVE[2]*nd);
+  for(const t of TORCE){
+    const dx=t.p[0]-c[0], dy=t.p[1]-c[1], dz=t.p[2]-c[2];
+    const d2=dx*dx+dy*dy+dz*dz, d=Math.sqrt(d2)||1e-4;
+    const ld=Math.max(0,(n[0]*dx+n[1]*dy+n[2]*dz)/d);
+    const att=t.i*fiamma/(1+0.72*d2);
+    r+=col[0]*t.c[0]*ld*att; g+=col[1]*t.c[1]*ld*att; b+=col[2]*t.c[2]*ld*att;
+  }
+  // nebbia: il buio si mangia il fondo della stanza
+  const dv=Math.hypot(c[0]-occhio[0],c[1]-occhio[1],c[2]-occhio[2]);
+  const f=Math.max(0,Math.min(0.94,(dv-1.4)/6.4));
+  r=r*(1-f)+NEBBIA[0]*f; g=g*(1-f)+NEBBIA[1]*f; b=b*(1-f)+NEBBIA[2]*f;
+  const m=v=>Math.min(255,Math.max(0,v*255))|0;
+  return "rgb("+m(r)+","+m(g)+","+m(b)+")";
+}
+
+const vp=document.getElementById("vp");
+const NEAR=0.05;
+
+function disegna(occhio, imbardata){
+  const dpr=Math.min(2,window.devicePixelRatio||1);
+  const w=vp.clientWidth, h=vp.clientHeight;
+  if(!w||!h) return;
+  if(vp.width!==Math.round(w*dpr)||vp.height!==Math.round(h*dpr)){
+    vp.width=Math.round(w*dpr); vp.height=Math.round(h*dpr);
+  }
+  const g=vp.getContext("2d");
+  g.setTransform(dpr,0,0,dpr,0,0);
+  g.fillStyle="rgb(4,5,6)"; g.fillRect(0,0,w,h);
+
+  const fw=[Math.sin(imbardata),0,Math.cos(imbardata)];
+  const rt=[-Math.cos(imbardata),0,Math.sin(imbardata)];
+  const up=[0,1,0];
+  const fpx=(h/2)/Math.tan(64*Math.PI/360);
+  const cx=w/2, cy=h/2;
+
+  const inVista=p=>{
+    const vx=p[0]-occhio[0], vy=p[1]-occhio[1], vz=p[2]-occhio[2];
+    return [vx*rt[0]+vy*rt[1]+vz*rt[2], vx*up[0]+vy*up[1]+vz*up[2], vx*fw[0]+vy*fw[1]+vz*fw[2]];
+  };
+  const suSchermo=v=>{const s=fpx/v[2]; return [cx+v[0]*s, cy-v[1]*s];};
+  const taglia=vs=>{
+    const o=[];
+    for(let i=0;i<vs.length;i++){
+      const a=vs[i], b=vs[(i+1)%vs.length];
+      const ai=a[2]>=NEAR, bi=b[2]>=NEAR;
+      if(ai) o.push(a);
+      if(ai!==bi){ const t=(NEAR-a[2])/(b[2]-a[2]);
+        o.push([a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, NEAR]); }
+    }
+    return o;
+  };
+
+  const buf=[];
+  for(const f of SCENA.facce){
+    if(!f.viva){
+      const d=(occhio[0]-f.c[0])*f.n[0]+(occhio[1]-f.c[1])*f.n[1]+(occhio[2]-f.c[2])*f.n[2];
+      if(d<=0) continue;
+    }
+    let vs=f.pts.map(inVista);
+    vs=taglia(vs);
+    if(vs.length<3) continue;
+    let dep=0; for(const v of vs) dep+=v[2];
+    dep/=vs.length;
+    const col=f.viva
+      ? "rgb("+(215+40*fiamma|0)+","+(150+40*fiamma|0)+","+(70+30*fiamma|0)+")"
+      : tinta(f.col,f.n,f.c,occhio);
+    buf.push({pts:vs.map(suSchermo), dep, col, pav:f.tipo==='pav'});
+  }
+  buf.sort((a,b)=>b.dep-a.dep);
+  for(const o of buf){
+    g.beginPath(); g.moveTo(o.pts[0][0],o.pts[0][1]);
+    for(let i=1;i<o.pts.length;i++) g.lineTo(o.pts[i][0],o.pts[i][1]);
+    g.closePath();
+    g.fillStyle=o.col; g.fill();
+    g.strokeStyle=o.col; g.lineWidth=1; g.stroke();
+  }
+
+  // fughe delle lastre: si vedono solo vicino, il resto lo mangia il buio
+  g.lineWidth=1;
+  for(const [a,b] of SCENA.fughe){
+    let va=inVista(a), vb=inVista(b);
+    if(va[2]<NEAR&&vb[2]<NEAR) continue;
+    if(va[2]<NEAR){const t=(NEAR-va[2])/(vb[2]-va[2]);
+      va=[va[0]+(vb[0]-va[0])*t,va[1]+(vb[1]-va[1])*t,NEAR];}
+    if(vb[2]<NEAR){const t=(NEAR-vb[2])/(va[2]-vb[2]);
+      vb=[vb[0]+(va[0]-vb[0])*t,vb[1]+(va[1]-vb[1])*t,NEAR];}
+    const d=(va[2]+vb[2])/2;
+    const al=Math.max(0,0.34-d*0.045);
+    if(al<=0.01) continue;
+    g.strokeStyle="rgba(0,0,0,"+al.toFixed(3)+")";
+    const sa=suSchermo(va), sb=suSchermo(vb);
+    g.beginPath(); g.moveTo(sa[0],sa[1]); g.lineTo(sb[0],sb[1]); g.stroke();
+  }
+
+  // aloni delle torce
+  g.globalCompositeOperation="lighter";
+  for(const t of TORCE){
+    const v=inVista(t.p);
+    if(v[2]<NEAR) continue;
+    const s=suSchermo(v);
+    const rag=Math.max(20,fpx/Math.max(0.6,v[2])*1.15)*fiamma;
+    const gr=g.createRadialGradient(s[0],s[1],0,s[0],s[1],rag);
+    gr.addColorStop(0,"rgba(255,168,80,0.30)");
+    gr.addColorStop(1,"rgba(255,168,80,0)");
+    g.fillStyle=gr; g.beginPath(); g.arc(s[0],s[1],rag,0,Math.PI*2); g.fill();
+  }
+  g.globalCompositeOperation="source-over";
+
+  // vignettatura: il mobile si mangia gli angoli
+  const vg=g.createRadialGradient(cx,cy,Math.min(w,h)*0.28,cx,cy,Math.max(w,h)*0.72);
+  vg.addColorStop(0,"rgba(0,0,0,0)");
+  vg.addColorStop(1,"rgba(0,0,0,0.72)");
+  g.fillStyle=vg; g.fillRect(0,0,w,h);
+}
+
+/* ============================================================
+   4. IL GRUPPO: casella, verso, passo discreto
+   ============================================================ */
+const VERSI=[[0,-1],[1,0],[0,1],[-1,0]];   // 0 nord, 1 est, 2 sud, 3 ovest
+const NOMI=["nord","est","sud","ovest"];
+const OCCHIO=0.55;
+
+const gruppo={x:1, z:2, verso:1};          // guarda verso il corridoio
+const visitate=new Set(["1,2"]);
+
+let anim=null;                             // {da,a,daImb,aImb,t0,durata}
+const lento=window.matchMedia&&window.matchMedia("(prefers-reduced-motion:reduce)").matches;
+const DUR_PASSO=lento?0:150;
+const DUR_VOLTA=lento?0:140;
+
+const centro=(x,z)=>[x+0.5, OCCHIO, z+0.5];
+
+// verso 0 (nord) deve guardare verso z decrescente: avanti = (sin(y), cos(y)) con y = pi
+const imbardata=v=>Math.PI + v*(-Math.PI/2);
+
+function posaCorrente(now){
+  if(!anim) return {occhio:centro(gruppo.x,gruppo.z), imb:imbardata(gruppo.verso)};
+  const t=Math.min(1,(now-anim.t0)/anim.durata);
+  const e=t<0.5 ? 2*t*t : -1+(4-2*t)*t;    // accelera e frena
+  const o=[
+    anim.da[0]+(anim.a[0]-anim.da[0])*e,
+    anim.da[1]+(anim.a[1]-anim.da[1])*e,
+    anim.da[2]+(anim.a[2]-anim.da[2])*e
+  ];
+  const imb=anim.daImb+(anim.aImb-anim.daImb)*e;
+  if(t>=1) anim=null;
+  return {occhio:o, imb:imb};
+}
+
+const msg=document.getElementById("msg");
+let timerMsg=0;
+function dire(testo){
+  msg.textContent=testo;
+  msg.classList.remove("mute");
+  clearTimeout(timerMsg);
+  timerMsg=setTimeout(()=>msg.classList.add("mute"), 2600);
+}
+
+function portaVerso(x,z,dx,dz){
+  return PORTE.find(p=>p.x===x&&p.z===z&&p.dir[0]===dx&&p.dir[1]===dz);
+}
+
+function muovi(dx,dz){
+  if(anim) return;
+  const nx=gruppo.x+dx, nz=gruppo.z+dz;
+  if(!calpestabile(nx,nz)){
+    const porta=portaVerso(gruppo.x,gruppo.z,dx,dz);
+    if(porta) dire("La porta a "+porta.lato+" e' chiusa. Di la' comincia il modulo successivo.");
+    else dire("Pietra viva.");
+    return;
+  }
+  const da=centro(gruppo.x,gruppo.z), a=centro(nx,nz);
+  gruppo.x=nx; gruppo.z=nz;
+  visitate.add(nx+","+nz);
+  const imb=imbardata(gruppo.verso);
+  anim={da, a, daImb:imb, aImb:imb, t0:performance.now(), durata:Math.max(1,DUR_PASSO)};
+  if(nz===1 && nx>=3) dire("Corridoio a est.");
+  else if(nx<3) dire("Sala Ovale.");
+  disegnaMappa();
+}
+
+function volta(giro){
+  if(anim) return;
+  const daImb=imbardata(gruppo.verso);
+  gruppo.verso=(gruppo.verso+giro+4)%4;
+  const p=centro(gruppo.x,gruppo.z);
+  anim={da:p, a:p, daImb:daImb, aImb:daImb+(-giro)*Math.PI/2,
+        t0:performance.now(), durata:Math.max(1,DUR_VOLTA)};
+  document.getElementById("rosa").style.transform="rotate("+(gruppo.verso*-90)+"deg)";
+  dire("Guardi a "+NOMI[gruppo.verso]+".");
+  disegnaMappa();
+}
+
+function azione(a){
+  const v=VERSI[gruppo.verso];
+  const sx=VERSI[(gruppo.verso+3)%4], dx=VERSI[(gruppo.verso+1)%4];
+  if(a==="avanti")   muovi(v[0], v[1]);
+  if(a==="indietro") muovi(-v[0], -v[1]);
+  if(a==="passo-sx") muovi(sx[0], sx[1]);
+  if(a==="passo-dx") muovi(dx[0], dx[1]);
+  if(a==="volta-sx") volta(-1);
+  if(a==="volta-dx") volta(1);
+}
+
+/* ---------- comandi ---------- */
+for(const b of document.querySelectorAll(".pad button")){
+  b.addEventListener("click", ()=>{ azione(b.dataset.az); vp.focus({preventScroll:true}); });
+}
+const TASTI={
+  ArrowUp:"avanti", KeyW:"avanti",
+  ArrowDown:"indietro", KeyS:"indietro",
+  ArrowLeft:"volta-sx", ArrowRight:"volta-dx",
+  KeyQ:"volta-sx", KeyE:"volta-dx",
+  KeyA:"passo-sx", KeyD:"passo-dx"
+};
+window.addEventListener("keydown", e=>{
+  const a=TASTI[e.code];
+  if(!a) return;
+  if(e.target.tagName==="BUTTON" && (e.code==="Space"||e.code==="Enter")) return;
+  e.preventDefault();
+  azione(a);
+  const b=document.querySelector('[data-az="'+a+'"]');
+  if(b){ b.classList.add("giu"); setTimeout(()=>b.classList.remove("giu"),120); }
+});
+
+/* ---------- mappa ---------- */
+const mini=document.getElementById("mini");
+function disegnaMappa(){
+  const g=mini.getContext("2d");
+  const L=20, mx=6, my=4;
+  g.clearRect(0,0,mini.width,mini.height);
+  for(let z=0;z<PROF;z++) for(let x=0;x<LARG;x++){
+    if(!calpestabile(x,z)) continue;
+    const vis=visitate.has(x+","+z);
+    g.fillStyle=vis?"#3A3B35":"#191A18";
+    g.fillRect(mx+x*L, my+z*L, L-1, L-1);
+  }
+  // porte sui bordi
+  g.fillStyle="#7E3B27";
+  g.fillRect(mx+6*L-2, my+1*L+4, 3, L-9);
+  g.fillRect(mx-1, my+2*L+4, 3, L-9);
+  // il gruppo
+  const px=mx+gruppo.x*L+(L-1)/2, py=my+gruppo.z*L+(L-1)/2;
+  const a=gruppo.verso*Math.PI/2;
+  g.save(); g.translate(px,py); g.rotate(a);
+  g.fillStyle="#E0913F";
+  g.beginPath(); g.moveTo(0,-6); g.lineTo(4.5,5); g.lineTo(0,2.5); g.lineTo(-4.5,5);
+  g.closePath(); g.fill();
+  g.restore();
+}
+
+/* ---------- ciclo ---------- */
+let ultimo=0;
+function fotogramma(now){
+  // la fiamma respira: e' quello che fa sembrare viva una stanza ferma
+  if(!lento && now-ultimo>55){
+    fiamma=0.86+Math.sin(now*0.0042)*0.07+Math.sin(now*0.0131)*0.05+Math.random()*0.03;
+    ultimo=now;
+  }
+  const p=posaCorrente(now);
+  disegna(p.occhio, p.imb);
+}
+function ciclo(now){ fotogramma(now); requestAnimationFrame(ciclo); }
+// il primo fotogramma va disegnato subito: se la pagina nasce nascosta
+// requestAnimationFrame non parte e lo schermo resterebbe nero.
+document.addEventListener("visibilitychange", ()=>{
+  if(!document.hidden) fotogramma(performance.now());
+});
+
+document.getElementById("rosa").style.transform="rotate("+(gruppo.verso*-90)+"deg)";
+disegnaMappa();
+fotogramma(performance.now());
+requestAnimationFrame(ciclo);
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(disegnaMappa);
+dire("Sala Ovale. Guardi a est.");
+
+})();
+</script>

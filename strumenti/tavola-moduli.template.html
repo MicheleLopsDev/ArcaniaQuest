@@ -1,0 +1,698 @@
+<title>Tavola dei Moduli</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=Spectral:wght@300;400;600&family=JetBrains+Mono:wght@400;600&display=swap">
+
+<style>
+:root{
+  --paper:#E6E7E4; --paper-2:#DCDEDA; --card:#F1F2EF;
+  --ink:#15181B; --ink-2:#4A5155; --ink-3:#767E80;
+  --rule:#C3C7C1; --accent:#1F6B62; --accent-soft:#D7E3E0;
+  --rust:#8E4A2E; --rust-soft:#EFDDD4; --ok:#3D6B33;
+  --pietra:#B8BCB6; --roccia:#CFD2CC;
+  --shadow:0 1px 0 rgba(21,24,27,.05), 0 10px 26px -20px rgba(21,24,27,.6);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#121517; --paper-2:#0D0F11; --card:#191D20;
+    --ink:#DFE3E0; --ink-2:#A2ABA8; --ink-3:#7C8683;
+    --rule:#2A3034; --accent:#57A99C; --accent-soft:#1B322F;
+    --rust:#C0724C; --rust-soft:#33211A; --ok:#7EA872;
+    --pietra:#4A504D; --roccia:#23282A;
+    --shadow:0 1px 0 rgba(255,255,255,.03), 0 12px 30px -22px #000;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#121517; --paper-2:#0D0F11; --card:#191D20;
+  --ink:#DFE3E0; --ink-2:#A2ABA8; --ink-3:#7C8683;
+  --rule:#2A3034; --accent:#57A99C; --accent-soft:#1B322F;
+  --rust:#C0724C; --rust-soft:#33211A; --ok:#7EA872;
+  --pietra:#4A504D; --roccia:#23282A;
+  --shadow:0 1px 0 rgba(255,255,255,.03), 0 12px 30px -22px #000;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:"Spectral",Georgia,serif;font-size:16px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1280px;margin:0 auto;padding:36px 20px 72px;display:flex;flex-direction:column;gap:26px}
+
+.eyebrow{
+  font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.17em;
+  text-transform:uppercase;color:var(--accent);margin:0 0 10px;
+}
+h1{
+  font-family:"IM Fell English SC",Georgia,serif;font-weight:400;
+  font-size:clamp(30px,5vw,46px);line-height:1.05;margin:0 0 10px;
+}
+.dek{color:var(--ink-2);max-width:70ch;margin:0;font-weight:300}
+.dek b{color:var(--ink);font-weight:600}
+
+/* ---- barra di stato ---- */
+.stato{
+  display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;
+  background:var(--card);border:1px solid var(--rule);border-radius:3px;
+  padding:12px 16px;box-shadow:var(--shadow);
+}
+.avanzamento{flex:1 1 220px;min-width:180px}
+.avanzamento .cifre{
+  font-family:"JetBrains Mono",monospace;font-size:13px;font-variant-numeric:tabular-nums;
+  color:var(--ink);display:flex;justify-content:space-between;margin-bottom:6px;
+}
+.avanzamento .cifre span{color:var(--ink-3)}
+.barra{height:6px;background:var(--paper-2);border-radius:3px;overflow:hidden}
+.barra i{display:block;height:100%;background:var(--ok);width:0;transition:width .25s}
+
+button{
+  font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--ink-2);background:transparent;
+  border:1px solid var(--rule);border-radius:2px;padding:7px 12px;cursor:pointer;
+  transition:background .13s,color .13s,border-color .13s;
+}
+button:hover{background:var(--accent-soft);color:var(--ink);border-color:var(--accent)}
+button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--card)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.forte{color:var(--card);background:var(--accent);border-color:var(--accent)}
+button.forte:hover{filter:brightness(1.12)}
+
+/* ---- impaginazione ---- */
+.banco{display:grid;grid-template-columns:340px 1fr;gap:20px;align-items:start}
+@media (max-width:900px){ .banco{grid-template-columns:1fr} }
+
+.scaffale{
+  background:var(--card);border:1px solid var(--rule);border-radius:3px;
+  box-shadow:var(--shadow);max-height:78vh;overflow-y:auto;
+}
+.scaffale h2{
+  position:sticky;top:0;z-index:1;margin:0;
+  font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-3);font-weight:400;
+  background:var(--card);border-bottom:1px solid var(--rule);padding:9px 14px;
+}
+.griglia{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:1px;background:var(--rule)}
+.pezzo{
+  background:var(--card);border:0;padding:8px 4px 6px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  text-transform:none;letter-spacing:0;border-radius:0;
+}
+.pezzo:hover{background:var(--accent-soft)}
+.pezzo[aria-current="true"]{background:var(--accent);}
+.pezzo[aria-current="true"] .eti{color:var(--card)}
+.pezzo canvas{display:block}
+.eti{
+  font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.06em;
+  color:var(--ink-2);display:flex;align-items:center;gap:4px;
+}
+.eti .bollo{width:6px;height:6px;border-radius:50%;background:var(--rule);flex:0 0 auto}
+.eti .bollo.si{background:var(--ok)}
+
+/* ---- banco di lavoro ---- */
+.lavoro{
+  background:var(--card);border:1px solid var(--rule);border-radius:3px;
+  box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:14px;
+}
+.testata{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
+.testata h3{
+  font-family:"IM Fell English SC",Georgia,serif;font-weight:400;font-size:24px;margin:0;
+}
+.chip{
+  font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  padding:3px 8px;border-radius:2px;border:1px solid var(--rule);color:var(--ink-3);
+}
+.chip.stanza{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+.chip.corridoio{background:var(--rust-soft);color:var(--rust);border-color:var(--rust)}
+.chip.iniziale{background:var(--paper-2);color:var(--ink-2)}
+.spazio{flex:1 1 auto}
+
+.attrezzi{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.attrezzi .gruppo{display:flex;gap:6px;align-items:center;padding-right:12px;border-right:1px solid var(--rule)}
+.attrezzi .gruppo:last-child{border-right:0;padding-right:0}
+.attrezzi label{
+  font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-3);
+}
+select,input[type=text]{
+  font-family:"JetBrains Mono",monospace;font-size:11px;
+  background:var(--paper-2);color:var(--ink);border:1px solid var(--rule);
+  border-radius:2px;padding:6px 8px;
+}
+input[type=text]{font-family:"Spectral",serif;font-size:14px;min-width:170px}
+
+.telaio{
+  background:var(--paper-2);border:1px solid var(--rule);border-radius:2px;
+  padding:14px;overflow:auto;display:flex;justify-content:center;
+}
+#tela{display:block;touch-action:none;cursor:crosshair}
+
+.aiuto{
+  font-family:"JetBrains Mono",monospace;font-size:10.5px;line-height:1.9;
+  color:var(--ink-3);letter-spacing:.03em;
+}
+.aiuto b{color:var(--ink-2);font-weight:400}
+.avviso{
+  font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--rust);
+  min-height:18px;letter-spacing:.04em;
+}
+
+/* ---- esportazione ---- */
+details{background:var(--card);border:1px solid var(--rule);border-radius:3px;box-shadow:var(--shadow)}
+summary{
+  cursor:pointer;padding:12px 16px;
+  font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink-2);
+}
+summary:hover{color:var(--accent)}
+.pancia{padding:0 16px 16px;display:flex;flex-direction:column;gap:10px}
+textarea{
+  width:100%;height:280px;background:var(--paper-2);color:var(--ink-2);
+  border:1px solid var(--rule);border-radius:2px;padding:12px;
+  font-family:"JetBrains Mono",monospace;font-size:11.5px;line-height:1.6;resize:vertical;
+}
+.riga{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+footer{
+  border-top:1px solid var(--rule);padding-top:14px;
+  font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.1em;color:var(--ink-3);
+}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">ArcaniaQuest · catalogo dei moduli · 42 pezzi</p>
+    <h1>Tavola dei Moduli</h1>
+    <p class="dek">Tutti i pezzi del dungeon, disegnati dal JSON. Sono trascritti a occhio
+      dalle tavole stampate, quindi <b>vanno confrontati con l'originale</b>: qui si correggono
+      le caselle e le porte a colpi di clic, si spunta «verificato», e alla fine si copia il
+      catalogo giusto. Il lavoro resta salvato nel browser anche se chiudi la pagina.</p>
+  </header>
+
+  <div class="stato">
+    <div class="avanzamento">
+      <div class="cifre"><span>Verificati</span><b id="conta">0 / 42</b></div>
+      <div class="barra"><i id="barra"></i></div>
+    </div>
+    <div class="riga">
+      <button type="button" id="btn-prec">← precedente</button>
+      <button type="button" id="btn-succ">successivo →</button>
+      <button type="button" id="btn-prossimo" class="forte">primo da verificare</button>
+    </div>
+  </div>
+
+  <div class="banco">
+    <div class="scaffale" id="scaffale"></div>
+
+    <div class="lavoro">
+      <div class="testata">
+        <h3 id="titolo">—</h3>
+        <span class="chip" id="chip-fam">—</span>
+        <span class="chip" id="chip-tiro">—</span>
+        <span class="spazio"></span>
+        <button type="button" id="btn-verificato">segna verificato</button>
+        <button type="button" id="btn-ripristina">ripristina</button>
+      </div>
+
+      <div class="attrezzi">
+        <div class="gruppo">
+          <label for="nome">Nome</label>
+          <input type="text" id="nome" autocomplete="off">
+        </div>
+        <div class="gruppo">
+          <label for="fam">Famiglia</label>
+          <select id="fam">
+            <option value="stanza">stanza</option>
+            <option value="corridoio">corridoio</option>
+            <option value="iniziale">iniziale</option>
+          </select>
+        </div>
+        <div class="gruppo">
+          <label>Griglia</label>
+          <button type="button" data-dim="w-">larg −</button>
+          <button type="button" data-dim="w+">larg +</button>
+          <button type="button" data-dim="d-">prof −</button>
+          <button type="button" data-dim="d+">prof +</button>
+        </div>
+        <div class="gruppo" id="gruppo-modo">
+          <label>Modo</label>
+          <button type="button" data-modo="caselle" aria-pressed="true">caselle</button>
+          <button type="button" data-modo="partenza" aria-pressed="false" id="btn-partenza">partenza</button>
+        </div>
+      </div>
+
+      <div class="telaio"><canvas id="tela"></canvas></div>
+      <p class="avviso" id="avviso"></p>
+
+      <p class="aiuto">
+        <b>clic al centro di una casella</b> — scava o richiude la roccia<br>
+        <b>clic sul bordo di una casella</b> — gira fra: niente · apertura · porta<br>
+        <b>trascina</b> — dipinge piu' caselle di fila<br>
+        <b>modo partenza</b> — clic mette la scala d'ingresso, un altro clic la gira di 90°
+      </p>
+    </div>
+  </div>
+
+  <details>
+    <summary>Catalogo corretto — da incollare in content/moduli/catalogo.json</summary>
+    <div class="pancia">
+      <div class="riga">
+        <button type="button" id="btn-copia" class="forte">copia negli appunti</button>
+        <button type="button" id="btn-aggiorna">rigenera</button>
+        <button type="button" id="btn-azzera">butta le correzioni</button>
+        <span class="aiuto" id="esito-copia"></span>
+      </div>
+      <textarea id="uscita" spellcheck="false" readonly></textarea>
+    </div>
+  </details>
+
+  <footer>ArcaniaQuest · tavola di correzione · generata da content/moduli/catalogo.json</footer>
+</div>
+
+<script type="application/json" id="catalogo-originale">__CATALOGO__</script>
+
+<script>
+"use strict";
+(function(){
+
+const CHIAVE = "arcaniaquest.catalogo.v2";
+const ORIGINALE = JSON.parse(document.getElementById("catalogo-originale").textContent);
+const LATI = ["nord","est","sud","ovest"];
+const DIR = { nord:[0,-1], est:[1,0], sud:[0,1], ovest:[-1,0] };
+const VERSI = ["nord","est","sud","ovest"];
+
+/* ---------- stato ---------- */
+function appiattisci(cat){
+  const out=[];
+  for(const fam of ["iniziali","corridoi","stanze"])
+    for(const m of cat[fam]) out.push(JSON.parse(JSON.stringify(m)));
+  out.sort((a,b)=>{
+    const o={d6:0,d66:1};
+    if(o[a.pesca.tabella]!==o[b.pesca.tabella]) return o[a.pesca.tabella]-o[b.pesca.tabella];
+    return a.pesca.valore-b.pesca.valore;
+  });
+  return out;
+}
+const BASE = appiattisci(ORIGINALE);
+let moduli = BASE.map(m=>JSON.parse(JSON.stringify(m)));
+try{
+  const salvato = localStorage.getItem(CHIAVE);
+  if(salvato){
+    const s = JSON.parse(salvato);
+    if(Array.isArray(s) && s.length === BASE.length) moduli = s;
+  }
+}catch(e){ /* niente memoria, si lavora comunque */ }
+
+let scelto = 0;
+let modo = "caselle";
+let pennello = null;   // durante il trascinamento: "1" oppure "0"
+
+function salva(){
+  try{ localStorage.setItem(CHIAVE, JSON.stringify(moduli)); }catch(e){}
+}
+
+/* ---------- utilita' sul modulo ---------- */
+const dentro = (m,x,z)=> x>=0 && z>=0 && x<m.ingombro.w && z<m.ingombro.d;
+const piena  = (m,x,z)=> dentro(m,x,z) && m.caselle[z][x]==="1";
+
+function poniCasella(m,x,z,v){
+  const r = m.caselle[z];
+  m.caselle[z] = r.slice(0,x) + v + r.slice(x+1);
+  if(v==="0") m.connettori = m.connettori.filter(k=>!(k.cella[0]===x && k.cella[1]===z));
+}
+function connettoreIn(m,x,z,lato){
+  return m.connettori.find(k=>k.cella[0]===x && k.cella[1]===z && k.lato===lato);
+}
+// un connettore ha senso solo se di la' c'e' roccia o il fuori
+function apribile(m,x,z,lato){
+  if(!piena(m,x,z)) return false;
+  const [dx,dz]=DIR[lato];
+  return !piena(m,x+dx,z+dz);
+}
+function giraConnettore(m,x,z,lato){
+  const c = connettoreIn(m,x,z,lato);
+  if(!c){ m.connettori.push({lato, cella:[x,z], porta:false}); return "apertura"; }
+  if(c.porta === false){ c.porta = true; return "porta"; }
+  m.connettori = m.connettori.filter(k=>k!==c);
+  return "niente";
+}
+function ridimensiona(m,dw,dd){
+  const w=m.ingombro.w+dw, d=m.ingombro.d+dd;
+  if(w<1||d<1||w>12||d>12) return;
+  const righe=[];
+  for(let z=0; z<d; z++){
+    let r = m.caselle[z] || "";
+    if(r.length<w) r = r + "0".repeat(w-r.length);
+    righe.push(r.slice(0,w));
+  }
+  m.ingombro={w,d}; m.caselle=righe;
+  m.connettori = m.connettori.filter(k=>piena(m,k.cella[0],k.cella[1]));
+  if(m.partenza && !piena(m,m.partenza.cella[0],m.partenza.cella[1])) delete m.partenza;
+}
+function prefisso(fam){ return fam==="iniziale" ? "I" : fam==="corridoio" ? "C" : "S"; }
+
+/* ---------- disegno ---------- */
+function disegnaModulo(cv, m, lato, opzioni){
+  const o = opzioni||{};
+  const dpr = Math.min(2, window.devicePixelRatio||1);
+  const w=m.ingombro.w, d=m.ingombro.d;
+  const bordo = Math.max(4, lato*0.35);
+  const W = w*lato + bordo*2, H = d*lato + bordo*2;
+  cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr);
+  cv.style.width=W+"px"; cv.style.height=H+"px";
+  const g=cv.getContext("2d");
+  g.setTransform(dpr,0,0,dpr,0,0);
+  const st=getComputedStyle(document.body);
+  const C=n=>st.getPropertyValue(n).trim();
+
+  g.clearRect(0,0,W,H);
+  const ox=bordo, oz=bordo;
+
+  // roccia sotto, poi le caselle scavate
+  for(let z=0; z<d; z++) for(let x=0; x<w; x++){
+    const px=ox+x*lato, pz=oz+z*lato;
+    if(m.caselle[z][x]==="1"){
+      g.fillStyle=C("--pietra"); g.fillRect(px,pz,lato,lato);
+      g.strokeStyle=C("--roccia"); g.lineWidth=1;
+      g.strokeRect(px+.5,pz+.5,lato-1,lato-1);
+    }else if(o.mostraRoccia){
+      g.fillStyle=C("--roccia"); g.fillRect(px,pz,lato,lato);
+    }
+  }
+
+  // muro perimetrale: ogni lato che confina col vuoto
+  g.strokeStyle=C("--ink"); g.lineWidth=Math.max(1.5, lato*0.075); g.lineCap="square";
+  for(let z=0; z<d; z++) for(let x=0; x<w; x++){
+    if(m.caselle[z][x]!=="1") continue;
+    const px=ox+x*lato, pz=oz+z*lato;
+    for(const lat of LATI){
+      const [dx,dz]=DIR[lat];
+      if(piena(m,x+dx,z+dz)) continue;
+      g.beginPath();
+      if(lat==="nord"){ g.moveTo(px,pz); g.lineTo(px+lato,pz); }
+      if(lat==="sud"){ g.moveTo(px,pz+lato); g.lineTo(px+lato,pz+lato); }
+      if(lat==="ovest"){ g.moveTo(px,pz); g.lineTo(px,pz+lato); }
+      if(lat==="est"){ g.moveTo(px+lato,pz); g.lineTo(px+lato,pz+lato); }
+      g.stroke();
+    }
+  }
+
+  // connettori sopra il muro
+  for(const k of m.connettori){
+    const [x,z]=k.cella;
+    if(!dentro(m,x,z)) continue;
+    const px=ox+x*lato, pz=oz+z*lato;
+    const sp=Math.max(3, lato*0.18), m1=lato*0.16, m2=lato*0.84;
+    g.fillStyle = k.porta ? C("--rust") : C("--accent");
+    if(k.lato==="nord")  g.fillRect(px+m1, pz-sp/2, m2-m1, sp);
+    if(k.lato==="sud")   g.fillRect(px+m1, pz+lato-sp/2, m2-m1, sp);
+    if(k.lato==="ovest") g.fillRect(px-sp/2, pz+m1, sp, m2-m1);
+    if(k.lato==="est")   g.fillRect(px+lato-sp/2, pz+m1, sp, m2-m1);
+  }
+
+  // partenza
+  if(m.partenza && dentro(m,m.partenza.cella[0],m.partenza.cella[1])){
+    const [x,z]=m.partenza.cella;
+    const cx=ox+x*lato+lato/2, cz=oz+z*lato+lato/2, r=lato*0.3;
+    g.save(); g.translate(cx,cz);
+    g.rotate(VERSI.indexOf(m.partenza.verso||"nord")*Math.PI/2);
+    g.fillStyle=C("--ok");
+    g.beginPath(); g.moveTo(0,-r); g.lineTo(r*0.72,r*0.8); g.lineTo(0,r*0.36); g.lineTo(-r*0.72,r*0.8);
+    g.closePath(); g.fill(); g.restore();
+  }
+
+  // evidenza di cio' che il puntatore sta per toccare
+  if(o.evidenza){
+    const e=o.evidenza, px=ox+e.x*lato, pz=oz+e.z*lato;
+    g.fillStyle=C("--accent"); g.globalAlpha=.32;
+    if(!e.lato) g.fillRect(px+2,pz+2,lato-4,lato-4);
+    else{
+      const sp=Math.max(4, lato*0.2);
+      if(e.lato==="nord")  g.fillRect(px+2, pz-sp/2, lato-4, sp);
+      if(e.lato==="sud")   g.fillRect(px+2, pz+lato-sp/2, lato-4, sp);
+      if(e.lato==="ovest") g.fillRect(px-sp/2, pz+2, sp, lato-4);
+      if(e.lato==="est")   g.fillRect(px+lato-sp/2, pz+2, sp, lato-4);
+    }
+    g.globalAlpha=1;
+  }
+  return {ox, oz, lato};
+}
+
+/* ---------- scaffale ---------- */
+const scaffale=document.getElementById("scaffale");
+function costruisciScaffale(){
+  scaffale.innerHTML="";
+  const gruppi=[
+    ["Iniziali · d6","iniziale"],
+    ["Corridoi · d66","corridoio"],
+    ["Stanze · d66","stanza"]
+  ];
+  for(const [titolo,fam] of gruppi){
+    const idx = moduli.map((m,i)=>[m,i]).filter(([m])=>m.famiglia===fam);
+    if(!idx.length) continue;
+    const h=document.createElement("h2");
+    h.textContent = titolo + " — " + idx.length;
+    scaffale.appendChild(h);
+    const gr=document.createElement("div"); gr.className="griglia";
+    for(const [m,i] of idx){
+      const b=document.createElement("button");
+      b.type="button"; b.className="pezzo"; b.dataset.i=i;
+      b.setAttribute("aria-current", String(i===scelto));
+      const cv=document.createElement("canvas");
+      b.appendChild(cv);
+      const et=document.createElement("span"); et.className="eti";
+      const bo=document.createElement("i");
+      bo.className="bollo"+(m.verificato?" si":"");
+      et.appendChild(bo);
+      et.appendChild(document.createTextNode(m.pesca.valore));
+      b.appendChild(et);
+      b.addEventListener("click",()=>scegli(i));
+      gr.appendChild(b);
+      const lato = Math.max(5, Math.min(11, Math.floor(74/Math.max(m.ingombro.w,m.ingombro.d))));
+      disegnaModulo(cv,m,lato,{});
+    }
+    scaffale.appendChild(gr);
+  }
+}
+
+/* ---------- banco ---------- */
+const tela=document.getElementById("tela");
+const avviso=document.getElementById("avviso");
+let geo={ox:0,oz:0,lato:40};
+let evidenza=null;
+
+function latoTela(m){
+  const libero = Math.min(560, (document.querySelector(".telaio").clientWidth||560)-30);
+  return Math.max(18, Math.min(52, Math.floor(libero/Math.max(m.ingombro.w,4))));
+}
+function ridisegna(){
+  const m=moduli[scelto];
+  geo = disegnaModulo(tela, m, latoTela(m), {mostraRoccia:true, evidenza});
+}
+function dire(t){ avviso.textContent=t||""; }
+
+function bersaglio(ev){
+  const m=moduli[scelto];
+  const r=tela.getBoundingClientRect();
+  const mx=ev.clientX-r.left-geo.ox, my=ev.clientY-r.top-geo.oz;
+  const gx=mx/geo.lato, gz=my/geo.lato;
+  const x=Math.floor(gx), z=Math.floor(gz);
+  if(!dentro(m,x,z)) return null;
+  const fx=gx-x, fz=gz-z;
+  const dist={nord:fz, sud:1-fz, ovest:fx, est:1-fx};
+  let lato=null, min=0.26;
+  for(const l of LATI) if(dist[l]<min){ min=dist[l]; lato=l; }
+  return {x,z,lato};
+}
+
+tela.addEventListener("pointermove", ev=>{
+  const b=bersaglio(ev);
+  const cambiato = JSON.stringify(b)!==JSON.stringify(evidenza);
+  evidenza=b;
+  if(pennello!==null && b && !b.lato){
+    const m=moduli[scelto];
+    if(m.caselle[b.z][b.x]!==pennello){ poniCasella(m,b.x,b.z,pennello); aggiorna(); return; }
+  }
+  if(cambiato) ridisegna();
+});
+tela.addEventListener("pointerleave", ()=>{ evidenza=null; ridisegna(); });
+
+tela.addEventListener("pointerdown", ev=>{
+  const b=bersaglio(ev);
+  if(!b) return;
+  ev.preventDefault();
+  tela.setPointerCapture(ev.pointerId);
+  const m=moduli[scelto];
+
+  if(modo==="partenza"){
+    if(!piena(m,b.x,b.z)){ dire("La partenza va su una casella scavata."); return; }
+    if(m.partenza && m.partenza.cella[0]===b.x && m.partenza.cella[1]===b.z){
+      const i=(VERSI.indexOf(m.partenza.verso||"nord")+1)%4;
+      m.partenza.verso=VERSI[i];
+      dire("Il gruppo guarda a "+VERSI[i]+".");
+    }else{
+      m.partenza={cella:[b.x,b.z], verso:"nord"};
+      dire("Partenza spostata. Un altro clic la gira.");
+    }
+    aggiorna(); return;
+  }
+
+  if(b.lato){
+    if(!apribile(m,b.x,b.z,b.lato)){
+      dire(piena(m,b.x,b.z)
+        ? "Li' non si apre niente: di la' c'e' un'altra casella del modulo."
+        : "Prima scava la casella.");
+      return;
+    }
+    const esito=giraConnettore(m,b.x,b.z,b.lato);
+    dire(esito==="niente" ? "Connettore tolto." : "Connettore: "+esito+".");
+    aggiorna(); return;
+  }
+
+  pennello = m.caselle[b.z][b.x]==="1" ? "0" : "1";
+  poniCasella(m,b.x,b.z,pennello);
+  dire("");
+  aggiorna();
+});
+const molla=()=>{ pennello=null; };
+tela.addEventListener("pointerup",molla);
+tela.addEventListener("pointercancel",molla);
+
+/* ---------- comandi ---------- */
+for(const b of document.querySelectorAll("[data-dim]")){
+  b.addEventListener("click",()=>{
+    const m=moduli[scelto];
+    const k=b.dataset.dim;
+    ridimensiona(m, k==="w+"?1:k==="w-"?-1:0, k==="d+"?1:k==="d-"?-1:0);
+    aggiorna();
+  });
+}
+for(const b of document.querySelectorAll("[data-modo]")){
+  b.addEventListener("click",()=>{
+    modo=b.dataset.modo;
+    for(const o of document.querySelectorAll("[data-modo]"))
+      o.setAttribute("aria-pressed", String(o===b));
+    dire("");
+  });
+}
+document.getElementById("nome").addEventListener("input", ev=>{
+  moduli[scelto].nome = ev.target.value;
+  salva();
+  document.getElementById("titolo").textContent = ev.target.value || "—";
+});
+document.getElementById("fam").addEventListener("change", ev=>{
+  const m=moduli[scelto];
+  m.famiglia = ev.target.value;
+  m.id = prefisso(m.famiglia) + m.pesca.valore;
+  if(m.famiglia!=="iniziale") delete m.partenza;
+  aggiorna();
+});
+document.getElementById("btn-verificato").addEventListener("click",()=>{
+  const m=moduli[scelto];
+  m.verificato = !m.verificato;
+  aggiorna();
+  if(m.verificato) prossimoDaVerificare();
+});
+document.getElementById("btn-ripristina").addEventListener("click",()=>{
+  moduli[scelto]=JSON.parse(JSON.stringify(BASE[scelto]));
+  dire("Modulo riportato com'era nel catalogo.");
+  aggiorna();
+});
+document.getElementById("btn-prec").addEventListener("click",()=>scegli((scelto-1+moduli.length)%moduli.length));
+document.getElementById("btn-succ").addEventListener("click",()=>scegli((scelto+1)%moduli.length));
+document.getElementById("btn-prossimo").addEventListener("click", prossimoDaVerificare);
+
+function prossimoDaVerificare(){
+  for(let k=1;k<=moduli.length;k++){
+    const i=(scelto+k)%moduli.length;
+    if(!moduli[i].verificato){ scegli(i); return; }
+  }
+  dire("Verificati tutti e " + moduli.length + ".");
+}
+function scegli(i){
+  scelto=i; evidenza=null; dire("");
+  const m=moduli[i];
+  if(m.famiglia!=="iniziale" && modo==="partenza"){
+    modo="caselle";
+    for(const o of document.querySelectorAll("[data-modo]"))
+      o.setAttribute("aria-pressed", String(o.dataset.modo==="caselle"));
+  }
+  aggiorna();
+  const b=scaffale.querySelector('[data-i="'+i+'"]');
+  if(b) b.scrollIntoView({block:"nearest"});
+}
+
+/* ---------- uscita ---------- */
+function catalogoCorretto(){
+  const fuori = JSON.parse(JSON.stringify(ORIGINALE));
+  fuori.iniziali=[]; fuori.corridoi=[]; fuori.stanze=[];
+  const dove={iniziale:"iniziali", corridoio:"corridoi", stanza:"stanze"};
+  for(const m of moduli){
+    const c=JSON.parse(JSON.stringify(m));
+    c.id = prefisso(c.famiglia) + c.pesca.valore;
+    fuori[dove[c.famiglia]].push(c);
+  }
+  return JSON.stringify(fuori,null,2)
+    .replace(/\[\n\s+(-?\d+),\n\s+(-?\d+)\n\s+\]/g,"[$1, $2]");
+}
+const uscita=document.getElementById("uscita");
+document.getElementById("btn-aggiorna").addEventListener("click",()=>{
+  uscita.value=catalogoCorretto();
+});
+document.getElementById("btn-copia").addEventListener("click", async ()=>{
+  uscita.value=catalogoCorretto();
+  const esito=document.getElementById("esito-copia");
+  try{
+    await navigator.clipboard.writeText(uscita.value);
+    esito.textContent="copiato";
+  }catch(e){
+    uscita.removeAttribute("readonly"); uscita.select();
+    esito.textContent="selezionato: premi Ctrl+C";
+  }
+  setTimeout(()=>{ esito.textContent=""; }, 2600);
+});
+document.getElementById("btn-azzera").addEventListener("click",()=>{
+  if(!confirm("Butto tutte le correzioni e torno al catalogo di partenza?")) return;
+  moduli=BASE.map(m=>JSON.parse(JSON.stringify(m)));
+  try{ localStorage.removeItem(CHIAVE); }catch(e){}
+  scegli(0);
+});
+
+/* ---------- ridisegno generale ---------- */
+function aggiorna(){
+  const m=moduli[scelto];
+  document.getElementById("titolo").textContent=m.nome||"—";
+  document.getElementById("nome").value=m.nome||"";
+  document.getElementById("fam").value=m.famiglia;
+  const cf=document.getElementById("chip-fam");
+  cf.textContent=m.famiglia; cf.className="chip "+m.famiglia;
+  document.getElementById("chip-tiro").textContent=m.pesca.tabella+" "+m.pesca.valore;
+  const bv=document.getElementById("btn-verificato");
+  bv.textContent=m.verificato ? "verificato ✓" : "segna verificato";
+  bv.setAttribute("aria-pressed", String(!!m.verificato));
+  document.getElementById("btn-partenza").style.display =
+    m.famiglia==="iniziale" ? "" : "none";
+
+  const n=moduli.filter(x=>x.verificato).length;
+  document.getElementById("conta").textContent=n+" / "+moduli.length;
+  document.getElementById("barra").style.width=(n/moduli.length*100)+"%";
+
+  ridisegna();
+  costruisciScaffale();
+  salva();
+  if(document.querySelector("details").open) uscita.value=catalogoCorretto();
+}
+
+window.addEventListener("resize", ()=>ridisegna());
+if(window.matchMedia){
+  const mq=window.matchMedia("(prefers-color-scheme: dark)");
+  const h=()=>aggiorna();
+  if(mq.addEventListener) mq.addEventListener("change",h); else mq.addListener(h);
+}
+new MutationObserver(()=>aggiorna()).observe(document.documentElement,
+  {attributes:true, attributeFilter:["data-theme"]});
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>aggiorna());
+
+aggiorna();
+
+})();
+</script>

@@ -1,0 +1,40 @@
+# --- build ---
+build/
+out/
+bin/
+.gradle/
+gradle-app.setting
+*.class
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+
+# --- ambiente locale: percorsi e chiavi, non vanno mai su git ---
+local.properties
+keystore/
+*.jks
+*.keystore
+
+# --- Android ---
+*.apk
+*.aab
+*.dex
+captures/
+.cxx/
+
+# --- editor ---
+# .idea/ e' personale; .run/ invece si versiona: sono le configurazioni
+# di avvio che Android Studio non genera da solo per i moduli non-Android.
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# --- Claude Code: si versiona il lanciatore, non le impostazioni locali ---
+.claude/settings.local.json
+
+# --- sistema ---
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,424 @@
+{
+  "versione": 2,
+  "nota": "Trascrizione dalle tavole stampate (pag. 191-194). Tutti i moduli sono verificato:false finche' non sono confrontati con l'originale. Formato in doc/MODULI.md. Se manca 'pianta', la mesh si genera dalle caselle.",
+  "casellaMetri": 3,
+  "altezzaMuriMetri": 3,
+
+  "regoleFamiglia": {
+    "corridoio": {
+      "incontri": "vaganti",
+      "formazione": "fila",
+      "agguato": true,
+      "tesoro": false,
+      "arredi": [],
+      "luceTorceAMuro": false,
+      "riposo": false
+    },
+    "stanza": {
+      "incontri": "fissi",
+      "formazione": "libera",
+      "agguato": false,
+      "tesoro": true,
+      "arredi": ["scala", "altare", "fontana", "forziere", "statua"],
+      "luceTorceAMuro": true,
+      "riposo": true
+    },
+    "iniziale": {
+      "incontri": "nessuno",
+      "formazione": "libera",
+      "agguato": false,
+      "tesoro": false,
+      "arredi": ["scala"],
+      "luceTorceAMuro": true,
+      "riposo": true
+    }
+  },
+
+  "iniziali": [
+    { "id": "I1", "nome": "Sala Bassa", "famiglia": "iniziale", "pesca": { "tabella": "d6", "valore": 1 },
+      "ingombro": { "w": 6, "d": 2 },
+      "caselle": ["111111", "111111"],
+      "partenza": { "cella": [3, 1], "verso": "nord" },
+      "connettori": [
+        { "lato": "nord", "cella": [1, 0], "porta": true },
+        { "lato": "nord", "cella": [3, 0], "porta": true },
+        { "lato": "nord", "cella": [5, 0], "porta": true }
+      ], "verificato": false },
+
+    { "id": "I2", "nome": "Sala con Andito", "famiglia": "iniziale", "pesca": { "tabella": "d6", "valore": 2 },
+      "ingombro": { "w": 4, "d": 5 },
+      "caselle": ["0100", "0100", "1111", "1111", "1111"],
+      "partenza": { "cella": [2, 4], "verso": "nord" },
+      "connettori": [
+        { "lato": "nord", "cella": [1, 0], "porta": true },
+        { "lato": "est", "cella": [3, 3], "porta": true }
+      ], "verificato": false },
+
+    { "id": "I3", "nome": "Tridente", "famiglia": "iniziale", "pesca": { "tabella": "d6", "valore": 3 },
+      "ingombro": { "w": 5, "d": 3 },
+      "caselle": ["10101", "10101", "11111"],
+      "partenza": { "cella": [2, 2], "verso": "nord" },
+      "connettori": [
+        { "lato": "nord", "cella": [0, 0], "porta": false },
+        { "lato": "nord", "cella": [2, 0], "porta": false },
+        { "lato": "nord", "cella": [4, 0], "porta": false }
+      ], "verificato": false },
+
+    { "id": "I4", "nome": "Biforcazione", "famiglia": "iniziale", "pesca": { "tabella": "d6", "valore": 4 },
+      "ingombro": { "w": 5, "d": 3 },
+      "caselle": ["10001", "11111", "00100"],
+      "partenza": { "cella": [2, 2], "verso": "nord" },
+      "connettori": [
+        { "lato": "nord", "cella": [0, 0], "porta": false },
+        { "lato": "nord", "cella": [4, 0], "porta": false }
+      ], "verificato": false },
+
+    { "id": "I5", "nome": "Imbuto", "famiglia": "iniziale", "pesca": { "tabella": "d6", "valore": 5 },
+      "ingombro": { "w": 3, "d": 5 },
+      "caselle": ["111", "010", "010", "111", "010"],
+      "partenza": { "cella": [1, 2], "verso": "nord" },
+      "connettori": [
+        { "lato": "nord", "cella": [0, 0], "porta": false },
+        { "lato": "nord", "cella": [2, 0], "porta": false },
+        { "lato": "ovest", "cella": [0, 3], "porta": true },
+        { "lato": "est", "cella": [2, 3], "porta": true },
+        { "lato": "sud", "cella": [1, 4], "porta": false }
+      ], "verificato": false },
+
+    { "id": "I6", "nome": "Squadra", "famiglia": "iniziale", "pesca": { "tabella": "d6", "valore": 6 },
+      "ingombro": { "w": 5, "d": 3 },
+      "caselle": ["11111", "01100", "01110"],
+      "partenza": { "cella": [2, 1], "verso": "nord" },
+      "connettori": [
+        { "lato": "ovest", "cella": [0, 0], "porta": true },
+        { "lato": "est", "cella": [4, 0], "porta": true },
+        { "lato": "est", "cella": [3, 2], "porta": true }
+      ], "verificato": false }
+  ],
+
+  "corridoi": [
+    { "id": "C11", "nome": "Andito a Gradino", "famiglia": "corridoio", "pesca": { "tabella": "d66", "valore": 11 },
+      "ingombro": { "w": 5, "d": 2 },
+      "caselle": ["11100", "00111"],
+      "connettori": [
+        { "lato": "ovest", "cella": [0, 0], "porta": true },
+        { "lato": "est", "cella": [4, 1], "porta": false },
+        { "lato": "sud", "cella": [3, 1], "porta": true }
+      ], "verificato": false },
+
+    { "id": "C12", "nome": "Andito Corto", "famiglia": "corridoio", "pesca": { "tabella": "d66", "valore": 12 },
+      "ingombro": { "w": 3, "d": 1 },
+      "caselle": ["111"],
+      "connettori": [
+        { "lato": "ovest", "cella": [0, 0], "porta": true },
+        { "lato": "est", "cella": [2, 0], "porta": true }
+      ], "verificato": false },
+
+    { "id": "C13", "nome": "Serpentina", "famiglia": "corridoio", "pesca": { "tabella": "d66", "valore": 13 },
+      "ingombro": { "w": 4, "d": 4 },
+      "caselle": ["1111", "0001", "0011", "0010"],
+      "connettori": [
+        { "lato": "ovest", "cella": [0, 0], "porta": true },
+        { "lato": "sud", "cella": [2, 3], "porta": true }
+      ], "verificato": false },
+
+    { "id": "C14", "nome": "Traversa", "famiglia": "corridoio", "pesca": { "tabella": "d66", "valore": 14 },
+      "ingombro": { "w": 5, "d": 3 },
+      "caselle": ["10001", "11111", "10001"],
+      "connettori": [
+        { "lato": "nord", "cella": [0, 0], "porta": true },
+        { "lato": "nord", "cella": [4, 0], "porta": true },
+        { "lato": "sud", "cella": [0, 2], "porta": false },
+        { "lato": "sud", "cella": [4, 2], "porta": false }
+      ], "verificato": false },
+
+    { "id": "C26", "nome": "Passo", "famiglia": "corridoio", "pesca": { "tabella": "d66", "valore": 26 },
+      "ingombro": { "w": 2, "d": 1 },
+      "caselle": ["11"],
+      "connettori": [
+        { "lato": "ovest", "cella": [0, 0], "porta": true },
+        { "lato": "est", "cella": [1, 0], "porta": true }
+      ], "verificato": false },
+
+    { "id": "C42", "nome": "Scalinata", "famiglia": "corridoio", "pesca": { "tabella": "d66", "valore": 42 },
+      "ingombro": { "w": 4, "d": 3 },
+      "caselle": ["0011", "0110", "1100"],
+      "connettori": [
+        { "lato": "nord", "cella": [3, 0], "porta": false },
+        { "lato": "sud", "cella": [0, 2], "porta": false }
+      ], "verificato": false },
+
+    { "id": "C45", "nome": "Croce", "famiglia": "corridoio", "pesca": { "tabella": "d66", "valore": 45 },
+      "ingombro": { "w": 5, "d": 3 },
+      "caselle": ["00100", "11111", "00100"],
+      "connettori": [
+        { "lato": "nord", "cella": [2, 0], "porta": false },
+        { "lato": "sud", "cella": [2, 2], "porta": false },
+        { "lato": "ovest", "cella": [0, 1], "porta": false },
+        { "lato": "est", "cella": [4, 1], "porta": false }
+      ], "verificato": false },
+
+    { "id": "C51", "nome": "Forcella", "famiglia": "corridoio", "pesca": { "tabella": "d66", "valore": 51 },
+      "ingombro": { "w": 3, "d": 3 },
+      "caselle": ["101", "111", "010"],
+      "connettori": [
+        { "lato": "nord", "cella": [0, 0], "porta": false },
+        { "lato": "nord", "cella": [2, 0], "porta": false },
+        { "lato": "sud", "cella": [1, 2], "porta": true }
+      ], "verificato": false },
+
+    { "id": "C52", "nome": "Quadrivio", "famiglia": "corridoio", "pesca": { "tabella": "d66", "valore": 52 },
+      "ingombro": { "w": 5, "d": 5 },
+      "caselle": ["00100", "01110", "11111", "01110", "00100"],
+      "connettori": [
+        { "lato": "nord", "cella": [2, 0], "porta": false },
+        { "lato": "sud", "cella": [2, 4], "porta": false },
+        { "lato": "ovest", "cella": [0, 2], "porta": true },
+        { "lato": "est", "cella": [4, 2], "porta": true }
+      ], "verificato": false },
+
+    { "id": "C53", "nome": "Innesto", "famiglia": "corridoio", "pesca": { "tabella": "d66", "valore": 53 },
+      "ingombro": { "w": 3, "d": 2 },
+      "caselle": ["111", "010"],
+      "connettori": [
+        { "lato": "ovest", "cella": [0, 0], "porta": true },
+        { "lato": "est", "cella": [2, 0], "porta": false },
+        { "lato": "sud", "cella": [1, 1], "porta": false }
+      ], "verificato": false },
+
+    { "id": "C55", "nome": "Gomito", "famiglia": "corridoio", "pesca": { "tabella": "d66", "valore": 55 },
+      "ingombro": { "w": 6, "d": 2 },
+      "caselle": ["111111", "100000"],
+      "connettori": [
+        { "lato": "est", "cella": [5, 0], "porta": false },
+        { "lato": "sud", "cella": [0, 1], "porta": false },
+        { "lato": "nord", "cella": [2, 0], "porta": true }
+      ], "verificato": false },
+
+    { "id": "C63", "nome": "Andito con Porta", "famiglia": "corridoio", "pesca": { "tabella": "d66", "valore": 63 },
+      "ingombro": { "w": 5, "d": 1 },
+      "caselle": ["11111"],
+      "connettori": [
+        { "lato": "ovest", "cella": [0, 0], "porta": true },
+        { "lato": "est", "cella": [4, 0], "porta": true },
+        { "lato": "nord", "cella": [2, 0], "porta": true }
+      ], "verificato": false },
+
+    { "id": "C65", "nome": "Doppio Gomito", "famiglia": "corridoio", "pesca": { "tabella": "d66", "valore": 65 },
+      "ingombro": { "w": 5, "d": 3 },
+      "caselle": ["00111", "01100", "11100"],
+      "connettori": [
+        { "lato": "est", "cella": [4, 0], "porta": true },
+        { "lato": "ovest", "cella": [0, 2], "porta": true }
+      ], "verificato": false }
+  ],
+
+  "stanze": [
+    { "id": "S15", "nome": "Camera a Squadra", "famiglia": "stanza", "pesca": { "tabella": "d66", "valore": 15 },
+      "ingombro": { "w": 4, "d": 3 },
+      "caselle": ["0111", "1111", "1100"],
+      "connettori": [
+        { "lato": "ovest", "cella": [0, 1], "porta": true },
+        { "lato": "est", "cella": [3, 0], "porta": true },
+        { "lato": "sud", "cella": [1, 2], "porta": true }
+      ], "verificato": false },
+
+    { "id": "S16", "nome": "Camera Passante", "famiglia": "stanza", "pesca": { "tabella": "d66", "valore": 16 },
+      "ingombro": { "w": 5, "d": 3 },
+      "caselle": ["01100", "11111", "01100"],
+      "connettori": [
+        { "lato": "ovest", "cella": [0, 1], "porta": true },
+        { "lato": "est", "cella": [4, 1], "porta": true }
+      ], "verificato": false },
+
+    { "id": "S21", "nome": "Cella", "famiglia": "stanza", "pesca": { "tabella": "d66", "valore": 21 },
+      "ingombro": { "w": 3, "d": 3 },
+      "caselle": ["111", "111", "111"],
+      "connettori": [
+        { "lato": "ovest", "cella": [0, 1], "porta": true },
+        { "lato": "sud", "cella": [1, 2], "porta": true }
+      ], "verificato": false },
+
+    { "id": "S22", "nome": "Camera con Nicchie", "famiglia": "stanza", "pesca": { "tabella": "d66", "valore": 22 },
+      "ingombro": { "w": 5, "d": 3 },
+      "caselle": ["01110", "11111", "01110"],
+      "connettori": [
+        { "lato": "ovest", "cella": [0, 1], "porta": true },
+        { "lato": "sud", "cella": [2, 2], "porta": true }
+      ], "verificato": false },
+
+    { "id": "S23", "nome": "Camera con Andito", "famiglia": "stanza", "pesca": { "tabella": "d66", "valore": 23 },
+      "ingombro": { "w": 6, "d": 3 },
+      "caselle": ["000111", "111111", "000111"],
+      "connettori": [
+        { "lato": "ovest", "cella": [0, 1], "porta": true },
+        { "lato": "nord", "cella": [4, 0], "porta": true },
+        { "lato": "est", "cella": [5, 1], "porta": true }
+      ], "verificato": false },
+
+    { "id": "S24", "nome": "Crocevia", "famiglia": "stanza", "pesca": { "tabella": "d66", "valore": 24 },
+      "ingombro": { "w": 3, "d": 3 },
+      "caselle": ["010", "111", "010"],
+      "connettori": [
+        { "lato": "nord", "cella": [1, 0], "porta": true },
+        { "lato": "sud", "cella": [1, 2], "porta": true },
+        { "lato": "ovest", "cella": [0, 1], "porta": true },
+        { "lato": "est", "cella": [2, 1], "porta": true }
+      ], "verificato": false },
+
+    { "id": "S25", "nome": "Sala Ovale", "famiglia": "stanza", "pesca": { "tabella": "d66", "valore": 25 },
+      "ingombro": { "w": 6, "d": 4 },
+      "caselle": ["111000", "111111", "111000", "111000"],
+      "pianta": [
+        { "forma": "rettangoloArrotondato", "x": 0, "z": 0, "w": 3, "d": 4, "raggio": 0.9 },
+        { "forma": "rettangolo", "x": 3, "z": 1, "w": 3, "d": 1 }
+      ],
+      "connettori": [
+        { "lato": "est", "cella": [5, 1], "porta": true },
+        { "lato": "ovest", "cella": [0, 2], "porta": true }
+      ],
+      "arredi": [
+        { "tipo": "torcia", "cella": [1, 3] },
+        { "tipo": "torcia", "cella": [4, 1] }
+      ], "verificato": false },
+
+    { "id": "S31", "nome": "Camera a Gradino", "famiglia": "stanza", "pesca": { "tabella": "d66", "valore": 31 },
+      "ingombro": { "w": 4, "d": 3 },
+      "caselle": ["1110", "1110", "0011"],
+      "connettori": [
+        { "lato": "ovest", "cella": [0, 0], "porta": true },
+        { "lato": "est", "cella": [3, 2], "porta": true }
+      ], "verificato": false },
+
+    { "id": "S32", "nome": "Camera a T", "famiglia": "stanza", "pesca": { "tabella": "d66", "valore": 32 },
+      "ingombro": { "w": 5, "d": 3 },
+      "caselle": ["01100", "01000", "11111"],
+      "connettori": [
+        { "lato": "est", "cella": [2, 0], "porta": true },
+        { "lato": "ovest", "cella": [0, 2], "porta": true },
+        { "lato": "est", "cella": [4, 2], "porta": true }
+      ], "verificato": false },
+
+    { "id": "S33", "nome": "Sgabuzzino", "famiglia": "stanza", "pesca": { "tabella": "d66", "valore": 33 },
+      "ingombro": { "w": 3, "d": 1 },
+      "caselle": ["111"],
+      "connettori": [
+        { "lato": "sud", "cella": [1, 0], "porta": true },
+        { "lato": "est", "cella": [2, 0], "porta": false }
+      ], "verificato": false },
+
+    { "id": "S34", "nome": "Sala a Mandorla", "famiglia": "stanza", "pesca": { "tabella": "d66", "valore": 34 },
+      "ingombro": { "w": 7, "d": 3 },
+      "caselle": ["0011100", "1111111", "0011100"],
+      "pianta": [
+        { "forma": "rettangoloArrotondato", "x": 2, "z": 0, "w": 3, "d": 3, "raggio": 1.4 },
+        { "forma": "rettangolo", "x": 0, "z": 1, "w": 3, "d": 1 },
+        { "forma": "rettangolo", "x": 4, "z": 1, "w": 3, "d": 1 }
+      ],
+      "connettori": [
+        { "lato": "ovest", "cella": [0, 1], "porta": true },
+        { "lato": "est", "cella": [6, 1], "porta": true }
+      ], "verificato": false },
+
+    { "id": "S35", "nome": "Camera con Braccio", "famiglia": "stanza", "pesca": { "tabella": "d66", "valore": 35 },
+      "ingombro": { "w": 5, "d": 3 },
+      "caselle": ["11000", "11111", "01111"],
+      "connettori": [
+        { "lato": "ovest", "cella": [0, 0], "porta": true },
+        { "lato": "est", "cella": [4, 1], "porta": true }
+      ], "verificato": false },
+
+    { "id": "S36", "nome": "Camera fra due Curve", "famiglia": "stanza", "pesca": { "tabella": "d66", "valore": 36 },
+      "ingombro": { "w": 7, "d": 3 },
+      "caselle": ["1000000", "1111111", "0011001"],
+      "connettori": [
+        { "lato": "nord", "cella": [0, 0], "porta": false },
+        { "lato": "sud", "cella": [6, 2], "porta": false }
+      ], "verificato": false },
+
+    { "id": "S41", "nome": "Camera Passante Larga", "famiglia": "stanza", "pesca": { "tabella": "d66", "valore": 41 },
+      "ingombro": { "w": 6, "d": 3 },
+      "caselle": ["011110", "111111", "011110"],
+      "connettori": [
+        { "lato": "ovest", "cella": [0, 1], "porta": true },
+        { "lato": "est", "cella": [5, 1], "porta": true }
+      ], "verificato": false },
+
+    { "id": "S43", "nome": "Camera con Sfiato", "famiglia": "stanza", "pesca": { "tabella": "d66", "valore": 43 },
+      "ingombro": { "w": 5, "d": 3 },
+      "caselle": ["11110", "11111", "11110"],
+      "connettori": [
+        { "lato": "ovest", "cella": [0, 0], "porta": true },
+        { "lato": "est", "cella": [4, 1], "porta": true }
+      ], "verificato": false },
+
+    { "id": "S44", "nome": "Camera a Croce", "famiglia": "stanza", "pesca": { "tabella": "d66", "valore": 44 },
+      "ingombro": { "w": 4, "d": 4 },
+      "caselle": ["0110", "1111", "1110", "0110"],
+      "connettori": [
+        { "lato": "nord", "cella": [2, 0], "porta": true },
+        { "lato": "est", "cella": [3, 1], "porta": true },
+        { "lato": "sud", "cella": [2, 3], "porta": false }
+      ], "verificato": false },
+
+    { "id": "S46", "nome": "Camera con Coda", "famiglia": "stanza", "pesca": { "tabella": "d66", "valore": 46 },
+      "ingombro": { "w": 5, "d": 3 },
+      "caselle": ["11100", "11111", "11100"],
+      "connettori": [
+        { "lato": "ovest", "cella": [0, 1], "porta": true },
+        { "lato": "est", "cella": [4, 1], "porta": true }
+      ], "verificato": false },
+
+    { "id": "S54", "nome": "Camera Cieca", "famiglia": "stanza", "pesca": { "tabella": "d66", "valore": 54 },
+      "ingombro": { "w": 6, "d": 3 },
+      "caselle": ["111100", "111111", "111100"],
+      "connettori": [
+        { "lato": "est", "cella": [5, 1], "porta": false }
+      ], "verificato": false },
+
+    { "id": "S56", "nome": "Sala Alta", "famiglia": "stanza", "pesca": { "tabella": "d66", "valore": 56 },
+      "ingombro": { "w": 4, "d": 5 },
+      "caselle": ["0111", "1111", "1111", "1111", "1110"],
+      "connettori": [
+        { "lato": "est", "cella": [3, 0], "porta": true },
+        { "lato": "ovest", "cella": [0, 1], "porta": true },
+        { "lato": "sud", "cella": [1, 4], "porta": true }
+      ], "verificato": false },
+
+    { "id": "S61", "nome": "Sala Larga", "famiglia": "stanza", "pesca": { "tabella": "d66", "valore": 61 },
+      "ingombro": { "w": 5, "d": 3 },
+      "caselle": ["11111", "11111", "11111"],
+      "connettori": [
+        { "lato": "nord", "cella": [2, 0], "porta": true },
+        { "lato": "ovest", "cella": [0, 1], "porta": true },
+        { "lato": "est", "cella": [4, 1], "porta": true }
+      ], "verificato": false },
+
+    { "id": "S62", "nome": "Cella a Croce", "famiglia": "stanza", "pesca": { "tabella": "d66", "valore": 62 },
+      "ingombro": { "w": 3, "d": 3 },
+      "caselle": ["010", "111", "010"],
+      "connettori": [
+        { "lato": "nord", "cella": [1, 0], "porta": false },
+        { "lato": "sud", "cella": [1, 2], "porta": false },
+        { "lato": "ovest", "cella": [0, 1], "porta": false },
+        { "lato": "est", "cella": [2, 1], "porta": false }
+      ], "verificato": false },
+
+    { "id": "S64", "nome": "Cella con Andito", "famiglia": "stanza", "pesca": { "tabella": "d66", "valore": 64 },
+      "ingombro": { "w": 6, "d": 2 },
+      "caselle": ["110000", "111111"],
+      "connettori": [
+        { "lato": "ovest", "cella": [0, 1], "porta": true },
+        { "lato": "est", "cella": [5, 1], "porta": false }
+      ], "verificato": false },
+
+    { "id": "S66", "nome": "Camera a Tre Bracci", "famiglia": "stanza", "pesca": { "tabella": "d66", "valore": 66 },
+      "ingombro": { "w": 5, "d": 4 },
+      "caselle": ["00110", "11110", "11110", "00110"],
+      "connettori": [
+        { "lato": "nord", "cella": [3, 0], "porta": true },
+        { "lato": "ovest", "cella": [0, 1], "porta": true },
+        { "lato": "sud", "cella": [3, 3], "porta": true }
+      ], "verificato": false }
+  ]
+}
