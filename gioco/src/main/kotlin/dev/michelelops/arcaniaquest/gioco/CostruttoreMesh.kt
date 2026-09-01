@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.g3d.attributes.IntAttribute
 import com.badlogic.gdx.graphics.g3d.utils.MeshPartBuilder
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder
 import com.badlogic.gdx.graphics.g3d.utils.shapebuilders.BoxShapeBuilder
+import com.badlogic.gdx.math.Matrix4
 import com.badlogic.gdx.math.Vector3
 import dev.michelelops.arcaniaquest.regole.Modulo
 
@@ -27,7 +28,13 @@ import dev.michelelops.arcaniaquest.regole.Modulo
  * casella; [battente] se il legno va disegnato, cioe' se la porta e'
  * chiusa e a disegnarla tocca a questo pezzo e non al suo dirimpettaio.
  */
-data class Apertura(val indice: Int, val stretta: Boolean, val battente: Boolean)
+data class Apertura(
+    val indice: Int,
+    val stretta: Boolean,
+    val battente: Boolean,
+    /** Una porta aperta resta li', spalancata: non svanisce. */
+    val spalancata: Boolean = false
+)
 
 object CostruttoreMesh {
 
@@ -78,7 +85,7 @@ object CostruttoreMesh {
 
     /** Come si costruisce un modulo isolato: tutti i varchi aperti. */
     fun apertureLibere(m: Modulo): List<Apertura> =
-        m.connettori.mapIndexed { i, k -> Apertura(i, k.porta, k.porta) }
+        m.connettori.mapIndexed { i, k -> Apertura(i, k.porta, k.porta, spalancata = false) }
 
     /**
      * @param fuoriOccupato dice se la casella (in coordinate del modulo)
@@ -292,14 +299,11 @@ object CostruttoreMesh {
         val por = mb.part("porte", GL20.GL_TRIANGLES, attributi, materiali.legno)
         for (a in aperture.filter { it.battente }) {
             val k = m.connettori[a.indice]
-            val v = Pianta.varco(k, true)
-            val lungoX = k.lato == dev.michelelops.arcaniaquest.regole.Lato.NORD ||
-                         k.lato == dev.michelelops.arcaniaquest.regole.Lato.SUD
-            val (cx, cz) = centroPorta(k, v, c)
-            val sp = spessoreBattente(m, k, fuoriOccupato)
-            val larg = (if (lungoX) LARGHEZZA_PORTA else sp) * c
-            val prof = (if (lungoX) sp else LARGHEZZA_PORTA) * c
-            BoxShapeBuilder.build(por, cx, ALTEZZA_PORTA / 2f, cz, larg, ALTEZZA_PORTA, prof)
+            val sp = spessoreBattente(m, k, fuoriOccupato) * c
+            BoxShapeBuilder.build(
+                por,
+                anta(k, c, a.spalancata, ALTEZZA_PORTA / 2f, LARGHEZZA_PORTA * c, ALTEZZA_PORTA, sp)
+            )
         }
 
         // 8. le bande di ferro: due strisce bastano a far leggere il
@@ -307,15 +311,12 @@ object CostruttoreMesh {
         val fer = mb.part("ferramenta", GL20.GL_TRIANGLES, attributi, materiali.ferro)
         for (a in aperture.filter { it.battente }) {
             val k = m.connettori[a.indice]
-            val v = Pianta.varco(k, true)
-            val lungoX = k.lato == dev.michelelops.arcaniaquest.regole.Lato.NORD ||
-                         k.lato == dev.michelelops.arcaniaquest.regole.Lato.SUD
-            val (cx, cz) = centroPorta(k, v, c)
-            val sp = spessoreBattente(m, k, fuoriOccupato) + 0.02f
-            val larg = (if (lungoX) LARGHEZZA_PORTA * 0.9f else sp) * c
-            val prof = (if (lungoX) sp else LARGHEZZA_PORTA * 0.9f) * c
+            val sp = (spessoreBattente(m, k, fuoriOccupato) + 0.02f) * c
             for (y in floatArrayOf(ALTEZZA_PORTA * 0.24f, ALTEZZA_PORTA * 0.76f)) {
-                BoxShapeBuilder.build(fer, cx, y, cz, larg, 0.16f, prof)
+                BoxShapeBuilder.build(
+                    fer,
+                    anta(k, c, a.spalancata, y, LARGHEZZA_PORTA * 0.9f * c, 0.16f, sp)
+                )
             }
         }
 
@@ -368,6 +369,82 @@ object CostruttoreMesh {
         fuoriOccupato: (Int, Int) -> Boolean
     ): Float =
         if (fuoriOccupato(k.x + k.lato.dx, k.z + k.lato.dz)) SPESSORE_AL_CONFINE else SPESSORE_PORTA
+
+    /**
+     * La trasformazione di un'anta, chiusa o spalancata.
+     *
+     * Una porta aperta non sparisce: gira sui cardini e resta appoggiata
+     * al muro di fianco. Il cardine sta a un capo del varco, e l'anta si
+     * apre **verso il modulo che la disegna** — una scelta arbitraria ma
+     * che ha il pregio di non mandarla mai dentro la stanza del vicino.
+     *
+     * Non si apre di novanta gradi tondi ma di ottantadue: a novanta
+     * finirebbe complanare al muro laterale e le due superfici si
+     * darebbero battaglia sullo stesso piano.
+     */
+    private fun anta(
+        k: dev.michelelops.arcaniaquest.regole.Connettore,
+        c: Float,
+        spalancata: Boolean,
+        altezzaCentro: Float,
+        larga: Float,
+        alta: Float,
+        spessa: Float
+    ): Matrix4 {
+        val v = Pianta.varco(k, true)
+        val (cx, cz) = centroPorta(k, v, c)
+
+        // il muro corre perpendicolare al lato del connettore
+        val lungoX = k.lato == dev.michelelops.arcaniaquest.regole.Lato.NORD ||
+                     k.lato == dev.michelelops.arcaniaquest.regole.Lato.SUD
+        val mx = if (lungoX) 1f else 0f
+        val mz = if (lungoX) 0f else 1f
+        // verso fuori dal modulo, cioe' dove l'anta non deve andare
+        val nx = k.lato.dx.toFloat()
+        val nz = k.lato.dz.toFloat()
+
+        val cardineX = cx + mx * larga / 2f
+        val cardineZ = cz + mz * larga / 2f
+
+        // chiusa, l'anta va dal cardine verso l'altro capo del varco
+        val chiusa = gradiDi(-mx, -mz)
+        if (!spalancata) return matriceAnta(cardineX, altezzaCentro, cardineZ, chiusa, larga, alta, spessa)
+
+        // aperta, deve finire dalla parte opposta a fuori: fra i due versi
+        // di rotazione si sceglie quello che ci avvicina
+        val dentro = gradiDi(-nx, -nz)
+        val piu = differenza(chiusa + APERTURA, dentro)
+        val meno = differenza(chiusa - APERTURA, dentro)
+        val gradi = if (piu <= meno) chiusa + APERTURA else chiusa - APERTURA
+        return matriceAnta(cardineX, altezzaCentro, cardineZ, gradi, larga, alta, spessa)
+    }
+
+    /** Quanto e' spalancata un'anta aperta, in gradi. */
+    private const val APERTURA = 82f
+
+    private fun matriceAnta(
+        cardineX: Float, cardineY: Float, cardineZ: Float,
+        gradi: Float, larga: Float, alta: Float, spessa: Float
+    ): Matrix4 = Matrix4()
+        .setToTranslation(cardineX, cardineY, cardineZ)
+        .rotate(Vector3.Y, gradi)
+        // il cubo di BoxShapeBuilder e' centrato: lo si porta a meta' anta
+        .translate(larga / 2f, 0f, 0f)
+        .scale(larga, alta, spessa)
+
+    /**
+     * I gradi di rotazione attorno a Y che portano l'asse X su (dx, dz).
+     * Ruotando attorno a Y l'asse X va in (cos, 0, -sin): di qui il segno.
+     */
+    private fun gradiDi(dx: Float, dz: Float): Float =
+        Math.toDegrees(kotlin.math.atan2(-dz.toDouble(), dx.toDouble())).toFloat()
+
+    /** Quanto distano due angoli, senza farsi ingannare dal giro completo. */
+    private fun differenza(a: Float, b: Float): Float {
+        var d = kotlin.math.abs(a - b) % 360f
+        if (d > 180f) d = 360f - d
+        return d
+    }
 
     fun centroPorta(
         k: dev.michelelops.arcaniaquest.regole.Connettore,

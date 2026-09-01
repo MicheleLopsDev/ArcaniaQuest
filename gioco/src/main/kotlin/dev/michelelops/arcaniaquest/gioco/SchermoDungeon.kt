@@ -179,9 +179,10 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
                 // guarda-un-pezzo — e allora vale quello che dice il
                 // catalogo, se no le porte sparirebbero proprio dove le si
                 // sta andando a controllare.
-                battente = if (porta != null)
-                    !porta.aperta && porta.proprietario == (p.chiave to i)
-                else k.porta
+                // Il battente si disegna sempre, aperto o chiuso: una
+                // porta che si apre deve girare sui cardini, non svanire.
+                battente = if (porta != null) porta.proprietario == (p.chiave to i) else k.porta,
+                spalancata = porta?.aperta == true
             )
         }
         val modello = CostruttoreMesh.costruisci(p.modulo, materiali, aperture) { lx, lz ->
