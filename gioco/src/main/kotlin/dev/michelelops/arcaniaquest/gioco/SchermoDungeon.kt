@@ -140,6 +140,27 @@ class SchermoDungeon(private val avvio: Avvio = Avvio()) : ApplicationAdapter() 
         for (m in modelli.values) m.dispose()
         modelli.clear(); istanze.clear()
         for (p in dungeon.pezzi) rifaiPezzo(p)
+
+        if (avvio.dallAlto || avvio.pienaLuce) elencaBattenti()
+    }
+
+    /** Dove finisce ogni battente, in metri di mondo. Solo diagnostica. */
+    private fun elencaBattenti() {
+        Gdx.app.log("arcania", "battenti disegnati:")
+        for (p in dungeon.pezzi) {
+            for (i in dungeon.battentiChiusiDi(p.chiave)) {
+                val k = p.modulo.connettori[i]
+                val v = Pianta.varco(k, true)
+                val (lx, lz) = CostruttoreMesh.centroPorta(k, v, Misure.CASELLA)
+                val mx = lx + p.ox * Misure.CASELLA
+                val mz = lz + p.oz * Misure.CASELLA
+                Gdx.app.log(
+                    "arcania",
+                    "  %-9s conn %d %-5s   mondo %7.2f , %7.2f"
+                        .format(p.chiave, i, k.lato.name.lowercase(), mx, mz)
+                )
+            }
+        }
     }
 
     /** Rifa' la mesh di un pezzo solo: serve quando una porta si apre. */

@@ -262,13 +262,15 @@ object CostruttoreMesh {
             val larg = (if (lungoX) LARGHEZZA_PORTA else SPESSORE_PORTA) * c
             val prof = (if (lungoX) SPESSORE_PORTA else LARGHEZZA_PORTA) * c
             val alto = h - ALTEZZA_PORTA
-            // L'architrave e' muratura che tappa il varco sopra la porta:
-            // largo quanto il varco e spesso quanto il muro, non un
-            // pannello appoggiato che sporge e si vede di sbieco.
+            // L'architrave e' la muratura che tappa il varco sopra la
+            // porta. Spessa quanto il muro se di la' c'e' roccia; sottile
+            // se di la' c'e' un altro modulo, perche' allora anche lui ne
+            // disegna una e le due si affiancano come le facce del muro.
+            val oltre = fuoriOccupato(k.x + k.lato.dx, k.z + k.lato.dz)
+            val spesso = if (oltre) SPESSORE_AL_CONFINE else Misure.SPESSORE_MURO / c
             val largoVarco = Pianta.LARGO_PORTA * 2f + 0.06f
-            val spessoMuro = Misure.SPESSORE_MURO / c
-            val largArc = (if (lungoX) largoVarco else spessoMuro) * c
-            val profArc = (if (lungoX) spessoMuro else largoVarco) * c
+            val largArc = (if (lungoX) largoVarco else spesso) * c
+            val profArc = (if (lungoX) spesso else largoVarco) * c
             BoxShapeBuilder.build(arc, cx, ALTEZZA_PORTA + alto / 2f, cz, largArc, alto, profArc)
         }
 
@@ -280,8 +282,9 @@ object CostruttoreMesh {
             val lungoX = k.lato == dev.michelelops.arcaniaquest.regole.Lato.NORD ||
                          k.lato == dev.michelelops.arcaniaquest.regole.Lato.SUD
             val (cx, cz) = centroPorta(k, v, c)
-            val larg = (if (lungoX) LARGHEZZA_PORTA else SPESSORE_PORTA) * c
-            val prof = (if (lungoX) SPESSORE_PORTA else LARGHEZZA_PORTA) * c
+            val sp = spessoreBattente(m, k, fuoriOccupato)
+            val larg = (if (lungoX) LARGHEZZA_PORTA else sp) * c
+            val prof = (if (lungoX) sp else LARGHEZZA_PORTA) * c
             BoxShapeBuilder.build(por, cx, ALTEZZA_PORTA / 2f, cz, larg, ALTEZZA_PORTA, prof)
         }
 
@@ -294,8 +297,9 @@ object CostruttoreMesh {
             val lungoX = k.lato == dev.michelelops.arcaniaquest.regole.Lato.NORD ||
                          k.lato == dev.michelelops.arcaniaquest.regole.Lato.SUD
             val (cx, cz) = centroPorta(k, v, c)
-            val larg = (if (lungoX) LARGHEZZA_PORTA * 0.9f else SPESSORE_PORTA + 0.03f) * c
-            val prof = (if (lungoX) SPESSORE_PORTA + 0.03f else LARGHEZZA_PORTA * 0.9f) * c
+            val sp = spessoreBattente(m, k, fuoriOccupato) + 0.02f
+            val larg = (if (lungoX) LARGHEZZA_PORTA * 0.9f else sp) * c
+            val prof = (if (lungoX) sp else LARGHEZZA_PORTA * 0.9f) * c
             for (y in floatArrayOf(ALTEZZA_PORTA * 0.24f, ALTEZZA_PORTA * 0.76f)) {
                 BoxShapeBuilder.build(fer, cx, y, cz, larg, 0.16f, prof)
             }
@@ -311,22 +315,52 @@ object CostruttoreMesh {
      */
     private const val LARGHEZZA_PORTA = Pianta.LARGO_PORTA * 2f + 0.04f
     private const val SPESSORE_PORTA = 0.18f
+
+    /**
+     * Lo spessore del battente quando sta sul confine fra due moduli.
+     *
+     * Li' il muro non ha spessore — i due moduli condividono la faccia —
+     * e una porta da mezzo metro sporge un quarto di metro dentro ognuno
+     * dei due corridoi. Vista da vicino sembra un pannello piantato di
+     * traverso: e' il difetto che si nota per primo camminando.
+     */
+    private const val SPESSORE_AL_CONFINE = 0.05f
     private const val ALTEZZA_PORTA = 2.1f
 
     /**
-     * Il centro del battente, spostato dentro lo spessore del muro invece
-     * che sul filo: una porta a meta' fuori dal muro si vede subito.
+     * Il centro del battente: **sul filo del confine** fra le due caselle.
+     *
+     * Prima lo spostavo di mezzo spessore di muro verso fuori, per
+     * infilarlo nella pietra. Funzionava finche' due moduli affiancati
+     * avevano ognuno il suo muro: il battente spariva dentro il doppio
+     * spessore. Da quando il confine e' condiviso e li' il muro non ha
+     * piu' spessore, quello scarto piantava la porta dentro il corridoio
+     * del vicino, di traverso.
+     *
+     * Sul confine invece sta bene in tutti e due i casi: se di la' c'e'
+     * roccia sporge per meta' nel muro, come una porta vera; se di la'
+     * c'e' un altro modulo, sporge di un quarto di metro per parte.
      */
-    private fun centroPorta(
+    /**
+     * Quanto e' spessa una porta: quanto il muro che la ospita.
+     *
+     * Sul confine fra due moduli il muro non ha spessore, e li' il
+     * battente dev'essere una lastra sottile. Dove invece di la' c'e'
+     * roccia, il muro e' pieno e la porta ci sta dentro comoda.
+     */
+    private fun spessoreBattente(
+        m: Modulo,
+        k: dev.michelelops.arcaniaquest.regole.Connettore,
+        fuoriOccupato: (Int, Int) -> Boolean
+    ): Float =
+        if (fuoriOccupato(k.x + k.lato.dx, k.z + k.lato.dz)) SPESSORE_AL_CONFINE else SPESSORE_PORTA
+
+    fun centroPorta(
         k: dev.michelelops.arcaniaquest.regole.Connettore,
         v: Riquadro,
         c: Float
-    ): Pair<Float, Float> {
-        val fuori = Misure.SPESSORE_MURO / c / 2f
-        val cx = (v.x0 + v.x1) / 2f + k.lato.dx * fuori
-        val cz = (v.z0 + v.z1) / 2f + k.lato.dz * fuori
-        return (cx * c) to (cz * c)
-    }
+    ): Pair<Float, Float> =
+        ((v.x0 + v.x1) / 2f * c) to ((v.z0 + v.z1) / 2f * c)
 
     /**
      * Niente scarto delle facce di dietro.
