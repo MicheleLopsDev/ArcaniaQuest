@@ -25,12 +25,11 @@ import kotlin.system.exitProcess
  * interrompe, cosi' puo' stare in una verifica automatica.
  */
 fun main(args: Array<String>) {
-    val opzione = { nome: String -> args.firstOrNull { it.startsWith("--$nome=") }?.substringAfter('=') }
-
-    val quantiPezzi = opzione("pezzi")?.toIntOrNull() ?: 12
-    val semi = leggiSemi(opzione("semi") ?: "1-200")
-    val conDiario = opzione("diario") != null
-    val cartella = File(opzione("dove") ?: "../build/perlustrazioni")
+    val arg = Argomenti(args)
+    val quantiPezzi = arg.intero("pezzi", 12)
+    val semi = leggiSemi(arg.opzione("semi") ?: "1-200")
+    val conDiario = arg.opzione("diario") != null
+    val cartella = File(arg.opzione("dove") ?: "../build/perlustrazioni")
 
     val catalogo = Catalogo.daJson(File("moduli/catalogo.json").readText())
     val generatore = Generatore(catalogo)
